@@ -1,0 +1,79 @@
+//USER
+
+
+createdAt :"2020-10-07T00:49:08.856Z"
+(string)
+email
+"test1@hotmail.com"
+exactLocation
+"Victoria St, Abbotsford VIC 3067, Australia"
+handle
+"test1"
+latlong
+lat
+-37.8023601
+lng
+144.9983623
+postcode
+"3067"
+state
+"VIC"
+suburb
+"Victoria Street"
+userId
+"Ar4rbq0Hyte3NYSOzQMSyZWMCBC2"
+
+
+///////AVAILABILITES//// YOU MIGHT HAVE TO STORE IT AS JUST A DATE RANGE
+//THEN WHEN THEY GET BOOKINGS STORE THAT IN ANOTHER TABLE
+availabilities
+13-10-2020
+0 :"04:00"
+1 :"10:00"
+
+14-10-2020
+0 :"10:00"
+1 :"19:00"
+
+21-10-2020
+0 :"13:00"
+1 :"23:00"
+
+26-10-2020
+0 :"04:00"
+1 :"22:00"
+
+29-10-2020
+0 :"09:00"
+1 :"12:00"
+
+createdAt
+"2020-10-07T00:49:08.856Z"
+
+lat
+-37.8023601
+lng
+144.9983623
+
+postcode
+"3067"
+
+state
+"VIC"
+
+suburb
+"Victoria Street"
+
+userId
+"Ar4rbq0Hyte3NYSOzQMSyZWMCBC2"
+
+lat
+-37.8023601
+lng
+144.9983623
+postcode
+"3067"
+state
+"VIC"
+suburb
+"Victoria Street"
