@@ -41,7 +41,8 @@ module.exports = {
     login: async (_, args) => {
         const { username, password } = args;
         let errors = {};
-        console.log("here")
+        console.log("working")
+     
         try {
           if (username.trim() === "")
             errors.username = "Username must not be empty";
@@ -66,9 +67,11 @@ module.exports = {
             errors.password = "password is incorrect";
             throw new UserInputError("Password is incorrect", { errors });
           }
-          const token = jwt.sign({ username }, process.env.JWT_SECRET, {
+          //could change this to a larger time
+          const token = jwt.sign({ username , userId: user.userId }, process.env.JWT_SECRET, {
             expiresIn: 60 * 60,
           });
+          console.log(token)
   
           return {
             ...user.toJSON(),
@@ -85,6 +88,7 @@ module.exports = {
   
   Mutation: {
     register: async (_, args) => {
+      console.log('here')
       let { username, email, password, confirmPassword } = args;
       let errors = {};
       try {
@@ -105,7 +109,7 @@ module.exports = {
           throw errors;
         }
         
-        //encrypt password
+        //encrypt password : []
         password = await bcrypt.hash(password, 6);
 
         const user = await User.create({

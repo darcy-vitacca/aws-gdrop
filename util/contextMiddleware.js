@@ -5,7 +5,9 @@ const pubsub = new PubSub();
 
 ///if we are getting it via http requests we go through this method but through subscriptions we go through connects
 module.exports = (context) => {
+
   let token;
+  
   if (context.req && context.req.headers.authorization) {
     //this extracts the token from the header and takes the bearer part out the use jwt to compare the token and see if it was issued usinng our signature
     token = context.req.headers.authorization.split("Bearer ")[1];
@@ -27,18 +29,3 @@ module.exports = (context) => {
 
   return context;
 };
-
-// const server = new ApolloServer({
-//   schema,
-//   context: async ({ req, connection }) => {
-//     if (connection) {
-//       // check connection for metadata
-//       return connection.context;
-//     } else {
-//       // check from req
-//       const token = req.headers.authorization || "";
-
-//       return { token };
-//     }
-//   },
-// });

@@ -1,4 +1,4 @@
-const { ApolloServer, gql } = require("apollo-server");
+const { ApolloServer } = require("apollo-server");
 const { sequelize } = require("./models");
 
 //ROUTES
@@ -10,6 +10,8 @@ const typeDefs = require("./graphql/typeDefs");
 //HANDLERS OF THESE ROUTES
 const resolvers = require("./graphql/resolvers");
 const { fromPromise } = require("apollo-link");
+
+
 const contextMiddleware = require("./util/contextMiddleware");
 
 const server = new ApolloServer({

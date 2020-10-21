@@ -10,7 +10,7 @@ const {
 
   module.exports = {
     Query : {
-        getCalendar : async (parent, args, context) =>{
+        getCalendar : async (_, args, context) =>{
             try {
 
             } catch (err) {

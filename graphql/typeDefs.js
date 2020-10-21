@@ -14,38 +14,49 @@ module.exports = gql`
     lng: String
     state: String
     suburb: String
-  }
-  input Availabilities {
-    date: String!
-    start: String!
-    end: String!
+    # TODO: take out
+    token: String
   }
 
-  #buyer
-  type Availability {
-    date: String!
-    start: String!
-    end: String!
+  input availabilities {
+    date: String
+    start: String
+    end: String
   }
+
+  type Availability {
+    date: String
+    start: String
+    end: String
+  }
+  type AvailabilityResponse {
+    availabilities: [Availability]
+  }
+
+
+  #buyer
   type Booking {
-    date: String!
-    start: String!
-    end: String!
+    date: String
+    start: String
+    end: String
   }
 
   type Query {
     #seller
     getUsers: [User]!
     login(username: String!, password: String!): User!
+    set: [Availability]
+
+    
 
     #buyer
     getCalendar(userId: String!): [Availability]!
     queryAvailability(userId: String!, date: String!): [Booking]!
-   
   }
   type Mutation {
-
     #seller
+    setAvail(avail: [availabilities]): AvailabilityResponse
+   
     register(
       username: String!
       email: String!
@@ -53,7 +64,10 @@ module.exports = gql`
       confirmPassword: String!
     ): User!
 
-    setAvailabilities(availabilities: [Availabilities!]!): String!
+
+
+ 
+
 
     confirmBooking(
       buyerId: String!
@@ -63,7 +77,6 @@ module.exports = gql`
       end: String!
       bookingConfirmed: Boolean!
     ): String!
-  
 
     #buyer
     makeBooking(
