@@ -25,14 +25,21 @@ module.exports = gql`
   }
 
   type Availability {
-    date: String
-    start: String
-    end: String
+    date: String!
+    start: String!
+    end: String!
   }
   type AvailabilityResponse {
     availabilities: [Availability]
   }
 
+  type calculatedData {
+    distance: String!
+    duration: String!
+  }
+  type location {
+    location: String!
+  }
 
   #buyer
   type Booking {
@@ -45,9 +52,6 @@ module.exports = gql`
     #seller
     getUsers: [User]!
     login(username: String!, password: String!): User!
-    set: [Availability]
-
-    
 
     #buyer
     getCalendar(userId: String!): [Availability]!
@@ -55,19 +59,28 @@ module.exports = gql`
   }
   type Mutation {
     #seller
-    setAvail(avail: [availabilities]): AvailabilityResponse
-   
+    setAvail(avail: [availabilities]): AvailabilityResponse!
+
+    setLocation(
+      exactLocation: String!,
+      postcode: String!,
+      state: String!,
+      suburb: String!,
+    ): location!
+
+    #calculate distance
+    calculateDistance(
+      sellerId: String!
+      buyerLocation: String!
+      transportMethod: String!
+    ): calculatedData!
+
     register(
       username: String!
       email: String!
       password: String!
       confirmPassword: String!
     ): User!
-
-
-
- 
-
 
     confirmBooking(
       buyerId: String!
@@ -85,5 +98,6 @@ module.exports = gql`
       start: String!
       end: String!
     ): String!
+    #TODO: set location
   }
 `;

@@ -14,10 +14,16 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   availabilities.init({
+    id : {
+      type: DataTypes.STRING,
+      allowNull: false,
+      primaryKey: true
+    },
     uuid: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
     },
+  
     date: {
       type: DataTypes.STRING,
       allowNull: false,

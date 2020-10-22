@@ -3,10 +3,9 @@ module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.createTable('availabilities', {
       id: {
+        type: Sequelize.STRING,
         allowNull: false,
-        autoIncrement: true,
-        primaryKey: true,
-        type: Sequelize.INTEGER
+        primaryKey: true
       },
       uuid: {
         type: Sequelize.UUID,
