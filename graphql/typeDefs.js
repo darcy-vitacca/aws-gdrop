@@ -10,10 +10,9 @@ module.exports = gql`
     createdAt: String
     updatedAt: String
     exactLocation: String
-    lat: String
-    lng: String
     state: String
     suburb: String
+    postcode: String
     # TODO: take out
     token: String
   }
@@ -29,8 +28,19 @@ module.exports = gql`
     start: String!
     end: String!
   }
+  type Bookings {
+    date: String!
+    start: String!
+    end: String!
+  }
+
+
   type AvailabilityResponse {
     availabilities: [Availability]
+  }
+  type UserCalendar {
+    availabilities: [Availability]
+    bookings: [Bookings]
   }
 
   type calculatedData {
@@ -39,6 +49,10 @@ module.exports = gql`
   }
   type location {
     location: String!
+  }
+
+  type BookingMessage {
+    message: String!
   }
 
   #buyer
@@ -51,36 +65,37 @@ module.exports = gql`
   type Query {
     #seller
     getUsers: [User]!
-    login(username: String!, password: String!): User!
+    login(username: String!, password: String!): User! #COMPLETED
+    getMyCalendar(userId: String!): UserCalendar!
 
     #buyer
-    getCalendar(userId: String!): [Availability]!
+    getCalendar(userId: String!): UserCalendar!
     queryAvailability(userId: String!, date: String!): [Booking]!
-  }
-  type Mutation {
-    #seller
-    setAvail(avail: [availabilities]): AvailabilityResponse!
-
-    setLocation(
-      exactLocation: String!,
-      postcode: String!,
-      state: String!,
-      suburb: String!,
-    ): location!
 
     #calculate distance
     calculateDistance(
       sellerId: String!
       buyerLocation: String!
       transportMethod: String!
-    ): calculatedData!
+    ): calculatedData! #COMPLETED
+  }
+  type Mutation {
+    #seller
+    setAvail(avail: [availabilities]): AvailabilityResponse! #COMPLETED
+
+    setLocation(
+      exactLocation: String!
+      postcode: String!
+      state: String!
+      suburb: String!
+    ): location! # COMPLETED
 
     register(
       username: String!
       email: String!
       password: String!
       confirmPassword: String!
-    ): User!
+    ): User! # COMPLETED
 
     confirmBooking(
       buyerId: String!
@@ -97,7 +112,6 @@ module.exports = gql`
       date: String!
       start: String!
       end: String!
-    ): String!
-    #TODO: set location
+    ): BookingMessage!
   }
 `;

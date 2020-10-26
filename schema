@@ -81,3 +81,55 @@ state
 "VIC"
 suburb
 "Victoria Street"
+
+
+mutation register{
+register(username: "darcy" email:"vitacca6@hotmail.com" 
+  password: "123456" confirmPassword: "123456"){
+    userId username email createdAt
+  }
+}
+
+query login{
+login(username: "darcy" , password: "123456"){
+    userId username email createdAt token
+  }
+}
+
+
+mutation {
+  setAvail(avail: [{date: "1" ,start: "1" , end: "1"}, 
+    {date: "2", start :"2", end : "2"}]){
+    availabilities{
+      date start end
+    }
+    
+}
+}
+
+
+query {
+  calculateDistance(sellerId: "006fd647-12c1-4cff-b2d9-c78d53e29d4a",
+    buyerLocation:"314 Burwood Highway, Burwood VIC, Australia", 
+    transportMethod: "walking"
+  ){
+  distance duration
+}
+}
+
+query{
+  getCalendar(userId: "006fd647-12c1-4cff-b2d9-c78d53e29d4a"){
+    availabilities{
+       date start end
+    } bookings {
+date start end
+    }
+}
+}
+
+mutation{
+  makeBooking(userId: "006fd647-12c1-4cff-b2d9-c78d53e29d4a",
+  date: "1" , start: "1" end:"1"){
+  message
+  }
+}

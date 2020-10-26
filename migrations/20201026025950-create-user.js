@@ -36,11 +36,7 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      lat: {
-        type: Sequelize.STRING,
-        allowNull: true,
-      },
-      lng: {
+      postcode: {
         type: Sequelize.STRING,
         allowNull: true,
       },

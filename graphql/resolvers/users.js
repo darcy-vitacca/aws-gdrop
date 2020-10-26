@@ -88,7 +88,7 @@ module.exports = {
   
   Mutation: {
     register: async (_, args) => {
-      console.log('here')
+      
       let { username, email, password, confirmPassword } = args;
       let errors = {};
       try {
@@ -111,13 +111,14 @@ module.exports = {
         
         //encrypt password : []
         password = await bcrypt.hash(password, 6);
+        
 
         const user = await User.create({
           username,
           email,
           password,
         });
-        console.log(user)
+
         return user;
 
       } catch (err) {

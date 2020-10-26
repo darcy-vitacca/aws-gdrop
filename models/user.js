@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   User.init(
     {
-      userId: {
+    userId: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
         allowNull: false,
@@ -41,15 +41,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      lat: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      lng: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
       state: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      postcode: {
         type: DataTypes.STRING,
         allowNull: true,
       },

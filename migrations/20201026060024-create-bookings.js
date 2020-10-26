@@ -29,9 +29,9 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      buyer_id: {
+      buyerId: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       createdAt: {
         allowNull: false,
