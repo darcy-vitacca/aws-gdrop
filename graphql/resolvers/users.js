@@ -88,7 +88,6 @@ module.exports = {
   
   Mutation: {
     register: async (_, args) => {
-      
       let { username, email, password, confirmPassword } = args;
       let errors = {};
       try {
@@ -100,7 +99,7 @@ module.exports = {
         if (password.trim() === "")
           errors.password = "Password must not be empty";
         if (confirmPassword.trim() === "")
-          errors.confirmPassword = "Repeat password must not be empty";
+          errors.confirmPassword = "Confirm password must not be empty";
 
         if (password !== confirmPassword)
           errors.confirmPassword = "Passwords do not match";

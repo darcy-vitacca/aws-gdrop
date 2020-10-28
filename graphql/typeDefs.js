@@ -66,11 +66,11 @@ module.exports = gql`
     #seller
     getUsers: [User]!
     login(username: String!, password: String!): User! #COMPLETED
-    getMyCalendar(userId: String!): UserCalendar!
+    getMyCalendar(userId: String!): UserCalendar! #COMPLETED
 
     #buyer
-    getCalendar(userId: String!): UserCalendar!
-    queryAvailability(userId: String!, date: String!): [Booking]!
+    getCalendar(userId: String!): UserCalendar! #COMPLETED
+    # queryAvailability(userId: String!, date: String!): [Booking]! //TODO: needed?
 
     #calculate distance
     calculateDistance(
@@ -80,6 +80,13 @@ module.exports = gql`
     ): calculatedData! #COMPLETED
   }
   type Mutation {
+    register(
+      username: String!
+      email: String!
+      password: String!
+      confirmPassword: String!
+    ): User!
+    # COMPLETED
     #seller
     setAvail(avail: [availabilities]): AvailabilityResponse! #COMPLETED
 
@@ -90,12 +97,7 @@ module.exports = gql`
       suburb: String!
     ): location! # COMPLETED
 
-    register(
-      username: String!
-      email: String!
-      password: String!
-      confirmPassword: String!
-    ): User! # COMPLETED
+   
 
     confirmBooking(
       buyerId: String!

@@ -1,28 +1,45 @@
 const { UserInputError, AuthenticationError } = require("apollo-server");
 
 const { Availabilities } = require("../../models");
-const axios = require("axios");
 const { User } = require("../../models");
 
 module.exports = {
   Query: {
-    // getMyCalendar: async (parent, { userId }) => {
-    //   try {
-    //     //TODO: use userId to query the database and order them by date created
-    //     const calendar = await Availabilities.findAll({
-    //       where: { userId: userId },
-    //       order: [["date", "ASC"]],
-    //     });
+    getMyCalendar: async (_, { userId }) => {
+      try {
+        const userCalendar = {
+          availabilities: [],
+          bookings: [],
+        };
 
-    //     //TODO: get bookings also and return them and sub them into the availabilites
-    //     // return the calendar
+        //Availabilities
+        const calendarAvailabilites = await Availabilities.findAll({
+          where: { userId: userId },
+          order: [["date", "ASC"]],
+        });
+        let pulledAvailabilites = calendarAvailabilites
+        pulledAvailabilites = pulledAvailabilites.map((entry) => {
+          userCalendar.availabilities.push(entry);
+        });
+      
 
-    //     return calendar;
-    //   } catch (err) {
-    //     console.log(err);
-    //     throw err;
-    //   }
-    // },
+       //Bookings
+        const calendarBookings = await Bookings.findAll({
+          where: { userId: userId , bookingConfirmed : true},
+          order: [["date", "ASC"]],
+        });
+        let pulledBookings = calendarBookings
+        pulledBookings = pulledBookings.map((entry) => {
+          userCalendar.bookings.push(entry);
+        });
+        
+        console.log(userCalendar);
+        return userCalendar;
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
   },
 
   Mutation: {
@@ -89,6 +106,7 @@ module.exports = {
             ],
           }
         );
+      
     
         let uiAvailibilites = JSON.parse(JSON.stringify(args.avail));
         // console.log(uiAvailibilites);

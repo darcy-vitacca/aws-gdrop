@@ -9,26 +9,29 @@ module.exports = {
           availabilities: [],
           bookings: [],
         };
+
+        //Availabilities
         const calendarAvailabilites = await Availabilities.findAll({
           where: { userId: userId },
           order: [["date", "ASC"]],
         });
-
         let pulledAvailabilites = calendarAvailabilites
-
         pulledAvailabilites = pulledAvailabilites.map((entry) => {
           userCalendar.availabilities.push(entry);
         });
+      
 
-        console.log(pulledAvailabilites);
 
-        // const calendarBookings = await Bookings.findAll({
-        //   where: { sellerId: userId , bookingConfirmed : true},
-        //   order: [["date", "ASC"]],
-        // });
-
-        // console.log(calendarBookings)
-
+       //Bookings
+        const calendarBookings = await Bookings.findAll({
+          where: { userId: userId , bookingConfirmed : true},
+          order: [["date", "ASC"]],
+        });
+        let pulledBookings = calendarBookings
+        pulledBookings = pulledBookings.map((entry) => {
+          userCalendar.bookings.push(entry);
+        });
+        
         console.log(userCalendar);
         return userCalendar;
       } catch (err) {
@@ -79,11 +82,13 @@ module.exports = {
 
     },
     makeBooking : async(_, {userId, date, start, end}) =>{
-     
+      //TODO: check if booking is taken
       try{
         console.log(userId, date, start, end)
 
         const createBookings = await Bookings.create({ userId: userId, date: date , start: start, end: end });
+
+        console.log(createBookings)
 
         const message = {
           message : "success"

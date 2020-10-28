@@ -1,0 +1,589 @@
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:300,400,700);
+@import url(https://fonts.googleapis.com/icon?family=Material+Icons);
+
+/* VARIABLES */
+
+:root {
+  --main-color: #1a8fff;
+  --text-color: #777;
+  --text-color-light: #ccc;
+  --border-color: #eee;
+  --bg-color: #f9f9f9;
+  --neutral-color: #fff;
+}
+
+/* GENERAL */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-size: 1em;
+  font-weight: 300;
+  line-height: 1.5;
+  background-color: white;
+}
+
+header #logo {
+  font-size: 175%;
+  text-align: center;
+  color: var(--main-color);
+  line-height: 1;
+}
+
+header #logo .icon {
+  padding-right: 0.25em;
+}
+
+main {
+  display: block;
+  margin: 0 auto;
+  margin-top: 5em;
+  max-width: 50em;
+}
+
+/* GRID */
+
+.row {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.row-middle {
+  align-items: center;
+}
+
+.col {
+  flex-grow: 1;
+  flex-basis: 0;
+  max-width: 100%;
+}
+
+.col-start {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.col-center {
+  justify-content: center;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.col-end {
+  justify-content: flex-end;
+  text-align: right;
+}
+.monthTextCalendar {
+  font-weight: 400;
+}
+
+/* Calendar */
+
+.calendar {
+  display: block;
+  position: relative;
+  background: var(--neutral-color);
+  margin: 0 auto;
+  max-width: 1000px;
+  height: 100%;
+  min-width: 280px;
+}
+
+.calendar .header {
+  font-weight: 700;
+  font-size: 130%;
+  padding: 1.5em 0;
+  color: #1d3382;
+  /* border-bottom: 1px solid var(--border-color); */
+}
+
+.calendar .header .icon {
+  cursor: pointer;
+  transition: 0.15s ease-out;
+}
+
+.calendar .header .icon:hover {
+  transform: scale(1.75);
+  transition: 0.25s ease-out;
+  color: var(--main-color);
+}
+
+.calendar .header .icon:first-of-type {
+  margin-left: 1em;
+}
+
+.calendar .header .icon:last-of-type {
+  margin-right: 1em;
+}
+
+.calendar .days {
+  font-weight: 700;
+  color: #1d3382;
+  font-size: 89%;
+  padding: 0.75em 0;
+}
+
+.calendar .body .cell {
+  position: relative;
+  height: 5em;
+  overflow: hidden;
+  cursor: pointer;
+  transition: 0.25s ease-out;
+}
+
+.calendar .body .cell:hover {
+  background: var(--bg-color);
+  transition: 0.5s ease-out;
+}
+
+.calendar .body .selected {
+  border-left: 10px solid transparent;
+  border-image: linear-gradient(45deg, #1a8fff 0%, #53cbf1 40%);
+  border-image-slice: 1;
+}
+
+.calendar .body .cell .number {
+  position: absolute;
+  font-size: 82.5%;
+  line-height: 1;
+  top: 0.75em;
+  right: 0.75em;
+  font-weight: 700;
+}
+
+.calendar .body .disabled {
+  color: var(--text-color-light);
+  pointer-events: none;
+}
+
+.calendar .body .cell .bg {
+  font-weight: 700;
+  line-height: 1;
+  color: var(--main-color);
+  opacity: 0;
+  font-size: 8em;
+  position: absolute;
+  top: -0.2em;
+  right: -0.05em;
+  transition: 0.25s ease-out;
+  letter-spacing: -0.07em;
+}
+
+.calendar .body .cell:hover .bg,
+.calendar .body .selected .bg {
+  opacity: 0.05;
+  transition: 0.5s ease-in;
+}
+
+.calendar .body .col {
+  flex-basis: calc(92% / 7);
+  width: calc(100% / 7);
+  border: 2px solid #1d3382;
+  outline: 2px solid white;
+  /* outline-style: solid; */
+  margin: 0.1em;
+}
+.available {
+  background-color: #bedac4;
+  display: flex;
+  flex-direction: column;
+}
+.availabilitesTime {
+  font-size: 12px;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  margin-top: 3em;
+  line-height: 1em;
+  text-align: center;
+  justify-content: center;
+}
+
+.editTimeInputs {
+  max-width: 100px;
+}
+.deleteIcon {
+  width: 28px;
+  height: 28px;
+}
+.icon {
+  font-family: "Material Icons", serif;
+  font-style: normal;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "liga";
+}
+.iconDisabled {
+  font-family: "Material Icons", serif;
+  font-style: normal;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  color: rgb(177, 177, 177);
+  margin-left: 1em;
+  margin-right: 1em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "liga";
+}
+
+.checkDistanceInput {
+  width: 80%;
+  max-width: 380px;
+  min-width: 220px;
+  font-size: 18px;
+}
+
+/* Calendar Buyer */
+.calendarContainer {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.calendarImage {
+  display: none;
+}
+
+.paymentMethodsText,
+.deliveryMethodsText {
+  margin: 0 1em;
+}
+
+.distanceSection {
+  background-color: #bedac4;
+}
+
+.distanceCalculator,
+.pickupLocations {
+  text-align: center;
+}
+
+.distanceSection {
+  background-color: #bedac4;
+  position: relative;
+  display: grid;
+}
+.distanceSection:before {
+  content: "";
+  background-color: #bedac4;
+  position: absolute;
+  height: 100%;
+  width: 200vw;
+  left: -100vw;
+  z-index: -1;
+}
+
+.AppBody {
+  width: 90%;
+  margin: 0 auto;
+  margin-top: 2em;
+}
+/* Calendar images */
+.exchangeimg {
+  width: 80%;
+  margin: 1em auto;
+  object-fit: contain;
+}
+
+.deliveryimg {
+  display: block;
+  width: 140px;
+  margin: 0 auto;
+  margin-top: 1em;
+  object-fit: contain;
+}
+.paymentimg {
+  display: block;
+  width: 100px;
+  margin: 0 auto;
+  margin-top: 1em;
+  object-fit: contain;
+}
+
+.pageDescriptionContainer {
+  margin: 2em 1em;
+  padding: 1em 0;
+  
+}
+.pageDescriptionContainer p {
+  font-size: 16px;
+  text-align: center;
+}
+.distanceSection {
+}
+.distanceCalculator,
+.pickupLocations {
+  min-height: 240px;
+}
+.distanceCalculator h3,
+.pickupLocations h3 {
+  margin-top: 0;
+  margin-bottom: 0.2em;
+}
+.distanceCalculator h4 {
+  margin-bottom: 0.2em;
+  margin-top: 0.4em;
+}
+.distanceCalculator {
+  padding: 1em;
+}
+.pickupLocations {
+  padding: 1em;
+}
+.pickupLocations p {
+  margin: 0;
+}
+.deliveryMethodsText p,
+.paymentMethodsText p {
+  margin: 0;
+}
+.deliveryMethodsText h3,
+.paymentMethodsText h3 {
+  margin-bottom: 0.2em;
+}
+.transportMethodBtns {
+  display: flex;
+  justify-content: space-between;
+  width: 220px;
+  margin: 0 auto;
+  margin-bottom: 1em;
+}
+.distanceCalcText {
+  margin: 0;
+  margin-top: 0.2em;
+}
+.mapImg {
+  border-radius: 50%;
+  width: 140px;
+  border: 3px solid #1d3382;
+}
+
+/* Modal */
+.hideModal {
+  display: none;
+}
+.modalCont {
+  position: fixed;
+  z-index: 1;
+  padding-top: 80px;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.4);
+}
+.modal-content {
+  background-color: #fefefe;
+  margin: auto;
+  padding: 20px;
+  border: 5px solid #1d3382;
+  width: 80%;
+  min-width: 260px;
+  min-height: 250px;
+  max-width: 420px;
+}
+.close {
+  color: #aaaaaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  margin-top: -0.7em;
+}
+.close:hover,
+.close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+.modalForm label {
+  color: #1d3382;
+  font-weight: 600;
+}
+.modalForm input,
+.modalForm select {
+  height: 26px;
+  border: none;
+  border: 0.2px solid rgb(218, 218, 218);
+  border-radius: 4px;
+}
+.modalBtnCont {
+  display: flex;
+  /* justify-content: flex-end; */
+  justify-content: space-around;
+}
+.modalForm button {
+  background-color: #bedac4;
+  color: #1d3382;
+  padding: 0.4em 1.2em;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+}
+
+.modalForm p {
+  color: #1d3382;
+  font-weight: 500;
+}
+.modalSubTextLocation {
+  margin: 0;
+  padding: 0;
+  font-style: italic;
+  font-size: 1em;
+  line-height: 1.2em;
+}
+.termscondcont {
+  display: flex;
+  justify-content: space-between;
+}
+.termscondcont p {
+  width: 70%;
+  margin-top: 0;
+  font-weight: 600;
+}
+.termscondcont input {
+  width: 20%;
+  width: inherit;
+  height: inherit;
+}
+.modalMessage{
+  text-align: center;
+  margin:0;
+}
+.comingSoonText{
+  text-align: center;
+  width: 80%;
+  margin: 0 auto;
+}
+
+@media only screen and (min-width: 320px) {
+  .deliveryimg {
+    height: 100px;
+  }
+  .paymentimg {
+    height: 90px;
+  }
+}
+
+@media only screen and (min-width: 480px) {
+  .deliveryMethods {
+    display: flex;
+  }
+  .paymentMethods {
+    display: flex;
+  }
+  .deliveryimg {
+    margin: 3em 1.5em;
+    width: 100px;
+  }
+  .paymentimg {
+    margin: 3em 1.5em;
+  }
+  .deliveryMethodsText {
+    width: 60%;
+  }
+  .paymentMethodsText {
+    width: 60%;
+  }
+}
+@media only screen and (min-width: 700px) {
+  .transactionOptions {
+    display: flex;
+  }
+  .pageDescriptionContainer p {
+    text-align: inherit;
+  }
+  .deliveryMethods {
+    width: 50%;
+  }
+  .paymentMethods {
+    width: 50%;
+  }
+}
+
+@media only screen and (min-width: 768px) {
+  .calendarImage {
+    display: inherit;
+  }
+  .aboutSection {
+    display: flex;
+    max-height: 240px;
+  }
+  .calendarImage {
+    width: 40%;
+  }
+  .pageDescription {
+    width: 70%;
+  }
+  .distanceSection {
+    display: flex;
+  }
+  .distanceCalculator {
+    width: 60%;
+  }
+  .pickupLocations {
+    width: 40%;
+  }
+  .calendar .body .col {
+    flex-basis: calc(90% / 7);
+    margin: 0.3em;
+    border: 3px solid #1d3382;
+  }
+  .calendar .body .cell {
+    height: 6.4em;
+  }
+  .distanceCalculator :before {
+    height: 97px;
+  }
+}
+
+@media only screen and (min-width: 1024px) {
+  .distanceSection:before {
+    width: 195vw;
+  }
+}
+@media only screen and (min-width: 1232px) {
+  .distanceSection:before {
+    width: 190vw;
+  }
+}
+@media only screen and (min-width: 1350px) {
+  .distanceSection:before {
+    width: 187vw;
+  }
+}
+
+@media only screen and (min-width: 1450px) {
+  .distanceSection:before {
+    width: 185vw;
+  }
+}
+@media only screen and (min-width: 1640px) {
+  .distanceSection:before {
+    width: 180vw;
+  }
+}
