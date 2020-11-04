@@ -1,74 +1,141 @@
 //Core
-import React, { Component, Fragment } from "react";
-
-import dateFns from "date-fns";
+import React, { Fragment, useState, useEffect } from "react";
+import { useAuthDispatch, useAuthState } from "../../context/auth";
+import { useCalendarDispatch, useCalendarState } from "../../context/calendar";
+import { gql, useLazyQuery, useMutation } from "@apollo/client";
 import "../../css/calendar.css";
 
+import exchangeimg from "../../images/exchangeimg.svg";
+import paymentimg from "../../images/paymentmethod.svg";
+import deliverymethod from "../../images/deliverymethod.svg";
 
 //Packages
 import { v4 as uuid } from "uuid";
 import Autocomplete from "react-google-autocomplete";
+import dateFns from "date-fns";
 //Dropdowns
 const { TwentyFourHourTime30mins } = require("../../util/dropdowns");
 
-class Calendar extends Component {
-  constructor() {
-    super();
-    this.state = {
-      TwentyFourHourTime30mins: TwentyFourHourTime30mins,
-      currentMonth: new Date(),
-      selectedDate: new Date(),
-      selectedAvailability: [],
-      dayMode: false,
-      locationCheck: false,
-      exactLocation: "",
-      postcode: "",
-      state: "",
-      transportMethod: "driving",
-      showModal: false,
-      modalInfo: {
-        marketplace: "",
-        bookingTime: "",
-        location: "",
-        item: "",
-        price: "",
-        paymentMethod: "",
-        buyerName: "",
-        buyerEmail: "",
-        buyerNumber: "",
-        termsConditions: false,
-      },
-    };
+//graphql
+const GET_CALENDAR = gql`
+  query getCalendar($userId: String!) {
+    getCalendar(userId: $userId) {
+      availabilities {
+        date
+        start
+        end
+        uuid
+      }
+      bookings {
+        date
+        start
+        end
+        bookingConfirmed
+        uuid
+      }
+      state
+      suburb
+      postcode
+    }
   }
+`;
 
-  componentWillUnmount() {
-    if (this.props.UI.errors !== null) {
-      this.props.pageChangeErrorClear();
-    }
-    if (this.props.UI.message !== null) {
-      this.props.pageChangeErrorClear();
-    }
-  }
- 
-  //TODO: long and lattitude saving twice into calendar table
+export default function Calendar(props) {
+  const AuthDispatch = useAuthDispatch();
+  const { user } = useAuthState();
+
+  const CalendarDispatch = useCalendarDispatch();
+  const { calendar } = useCalendarState();
+
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const initialStateModal = {
+    showModal: false,
+    selectedAvailability: [],
+    marketplace: "",
+    bookingTime: "",
+    location: "",
+    item: "",
+    price: "",
+    paymentMethod: "",
+    buyerName: "",
+    buyerEmail: "",
+    buyerNumber: "",
+    termsConditions: false,
+  };
+
+  const initialStateLocation = {
+    locationCheck: false,
+    transportMethod: "driving",
+    exactLocation: "",
+    postcode: "",
+    state: "",
+    calculatedDistance: "",
+    calculatedDuration: "",
+  };
+
+  const [modal, setModal] = useState(initialStateModal);
+
+  const [location, setLocation] = useState(initialStateLocation);
+
+  //   dayMode: false,
+
   //TODO: bug when changing from this calendar to my calednar
-  componentDidMount() {
-    this.props.GetCalendar(this.props.match.params.userid, this.props.history);
-  }
+
+  const [
+    getCalendar,
+    { loading: calendarLoading, data: calendarData, errors },
+  ] = useLazyQuery(GET_CALENDAR, {
+    onError: (err) => console.log(err),
+  });
+
+  //   const [
+  //     getMap,
+  //     { loading: mapLoading, data: mapData, errors },
+  //   ] = useLazyQuery(GET_CALENDAR, {
+  //     onError: (err) => console.log(err),
+  //   });
+
+  useEffect(() => {
+    getCalendar({ variables: { userId: props.match.params.userid } });
+    if (calendarData) {
+      CalendarDispatch({
+        type: "SET_CALENDAR",
+        payload: {
+          availabilities: calendarData.getCalendar.availabilities.reduce(
+            (obj, item) => Object.assign(obj, { [item.date]: item }),
+            {}
+          ),
+          bookings: calendarData.getCalendar.bookings.reduce(
+            (obj, item) => Object.assign(obj, { [item.date]: item }),
+            {}
+          ),
+          state: calendarData.getCalendar.state,
+          suburb: calendarData.getCalendar.suburb,
+          postcode: calendarData.getCalendar.postcode,
+        },
+      });
+    }
+  }, [calendarData]);
 
   // //HEADER //HEADER //HEADER //HEADER //HEADER //HEADER
-  renderHeader() {
+  const header = () => {
+      
     const dateFormat = "MMMM YYYY";
     let currentMonthLimit = new Date();
     return (
       <div className="header row flex-middle">
         <div className="col col-start">
-          {currentMonthLimit.getMonth() < this.state.currentMonth.getMonth() ? (
-            <div className="icon" onClick={this.prevMonth}>
+          {dateFns.isAfter(
+            dateFns.format(currentMonth, dateFormat),
+            dateFns.format(currentMonthLimit, dateFormat)
+          ) ? (
+            <div className="icon" onClick={prevMonth}>
               chevron_left
             </div>
           ) : (
-            <div className="iconDisabled" onClick={this.prevMonth}>
+            <div className="iconDisabled" onClick={prevMonth}>
               chevron_left
             </div>
           )}
@@ -76,38 +143,39 @@ class Calendar extends Component {
         <div className="col col-center">
           <span>Availability</span>
           <span className="monthTextCalendar">
-            {dateFns.format(this.state.currentMonth, dateFormat)}
+            {dateFns.format(currentMonth, dateFormat)}
           </span>
         </div>
-        <div className="col col-end" onClick={this.nextMonth}>
+        <div className="col col-end" onClick={nextMonth}>
           <div className="icon">chevron_right</div>
         </div>
       </div>
     );
-  }
-
-  nextMonth = () => {
-    this.setState({
-      currentMonth: dateFns.addMonths(this.state.currentMonth, 1),
-    });
   };
 
-  prevMonth = () => {
-    let currentMonthLimit = new Date();
+  const nextMonth = () => {
+    setCurrentMonth(dateFns.addMonths(currentMonth, 1));
+  };
 
-    if (currentMonthLimit.getMonth() < this.state.currentMonth.getMonth()) {
-      this.setState({
-        currentMonth: dateFns.subMonths(this.state.currentMonth, 1),
-      });
+  const prevMonth = () => {
+    const dateFormat = "MMMM YYYY";
+    let currentMonthLimit = new Date();
+    if (
+      dateFns.isAfter(
+        dateFns.format(currentMonth, dateFormat),
+        dateFns.format(currentMonthLimit, dateFormat)
+      )
+    ) {
+      setCurrentMonth(dateFns.subMonths(currentMonth, 1));
     }
   };
 
   //DAYS //DAYS //DAYS //DAYS //DAYS //DAYS //DAYS
-  renderDays() {
+  const renderDays = () => {
     const dateFormat = "dddd";
     const days = [];
 
-    let startDate = dateFns.startOfWeek(this.state.currentMonth);
+    let startDate = dateFns.startOfWeek(currentMonth);
 
     for (let i = 0; i < 7; i++) {
       days.push(
@@ -125,13 +193,12 @@ class Calendar extends Component {
     }
 
     return <div className="days row">{days}</div>;
-  }
+  };
 
   //CELLS //CELLS //CELLS  //CELLS  //CELLS  //CELLS
-  //TODO: when it get's past january it you can't go backwards
-  renderCells() {
-    const { availabilities } = this.props.data;
-    const { currentMonth, selectedDate } = this.state;
+  const renderCells = () => {
+    let availabilities = calendar.availabilities;
+
     const monthStart = dateFns.startOfMonth(currentMonth);
     const monthEnd = dateFns.endOfMonth(monthStart);
     const startDate = dateFns.startOfWeek(monthStart);
@@ -153,7 +220,7 @@ class Calendar extends Component {
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
         formattedDate = dateFns.format(day, dateFormat);
-      
+
         let dateId = `${formattedDate}-${monthRef}-${yearRef}`;
         const cloneDay = day;
         days.push(
@@ -165,15 +232,19 @@ class Calendar extends Component {
                 ? "selected"
                 : ""
             } ${
-              (dateId in availabilities && dateFns.isSameMonth(day, monthStart)) && (day >= currentDay)
+              dateId in availabilities &&
+              dateFns.isSameMonth(day, monthStart) &&
+              day >= currentDay
                 ? "available"
                 : ""
             }`}
             key={day}
-            onClick={(e) => this.onDateClick(e, dateFns.parse(cloneDay))}
+            onClick={(e) => onDateClick(e, dateFns.parse(cloneDay))}
           >
             {//Checks if dateId matches an availibility and either puts out an emmpty day or the time and also checks for same month
-            (dateId in availabilities && dateFns.isSameMonth(day, monthStart)) && (day >= currentDay)  ? (
+            dateId in availabilities &&
+            dateFns.isSameMonth(day, monthStart) &&
+            day >= currentDay ? (
               <Fragment>
                 <span
                   className="number"
@@ -183,9 +254,9 @@ class Calendar extends Component {
                   {formattedDate}
                 </span>
 
-                <span className="availabilitesTime">{`${
-                  availabilities[`${dateId}`][0]
-                } - ${availabilities[`${dateId}`][1]}`}</span>
+                <span className="availabilitiesTime">{`${
+                  availabilities[`${dateId}`]["start"]
+                } - ${availabilities[`${dateId}`]["end"]}`}</span>
               </Fragment>
             ) : (
               <Fragment>
@@ -210,9 +281,12 @@ class Calendar extends Component {
       days = [];
     }
     return <div className="body">{rows}</div>;
-  }
+  };
 
-  onDateClick = (e, day) => {
+  const onDateClick = (e, day) => {
+    console.log(e.target);
+    console.log(e.target.innerText);
+    console.log(day);
     //TODO: need to handle if they click the number
     let selectedAvailability;
 
@@ -227,298 +301,230 @@ class Calendar extends Component {
       } else if (e.target.innerText.includes("")) {
         selectedAvailability = e.target.innerText.split(" ");
       }
-      this.setState({
+      setModal({
+        ...modal,
+        showModal: !modal.showModal,
         selectedAvailability: [
           selectedAvailability[0],
           selectedAvailability[2],
         ],
-        showModal: !this.state.showModal,
       });
     }
-
-    this.setState({
-      selectedDate: day,
-    });
+    setSelectedDate(day);
   };
 
-  modalSubmit = (event) => {
+  const modalSubmit = (event) => {
     event.preventDefault();
-    let { selectedDate} = this.state;
-    let {
-      bookingTime,
-      location,
-      item,
-      price,
-      paymentMethod,
-      buyerName,
-      buyerEmail,
-      buyerNumber,
-      termsConditions,
-      marketplace,
-    } = this.state.modalInfo;
-
     const dateFormat = "dddd Do MMMM YYYY";
-   
+
     const formData = {
-      selectedDate :  dateFns.format(selectedDate, dateFormat),
-      marketplace: marketplace,
-      bookingTime: bookingTime,
-      location: location,
-      item: item,
-      price: price,
-      paymentMethod: paymentMethod,
-      buyerName: buyerName,
-      buyerEmail: buyerEmail,
-      buyerNumber: buyerNumber,
-      termsConditions: termsConditions,
+      ...modal,
+      selectedDate: dateFns.format(selectedDate, dateFormat),
     };
     // console.log(formData)
     this.props.ContactForm(formData, this.props.history);
   };
 
-  handleModalChange = (event) => {
+  const handleModalChange = (event) => {
     if (event.target.name === "termsConditions") {
-      this.setState({
-        modalInfo: {
-          ...this.state.modalInfo,
-          [event.target.name]: !this.state.modalInfo.termsConditions,
-        },
+      setModal({
+        ...modal,
+        [event.target.name]: !modal.termsConditions,
       });
     } else {
-      this.setState({
-        modalInfo: {
-          ...this.state.modalInfo,
-          [event.target.name]: event.target.value,
-        },
+      setModal({
+        ...modal,
+        [event.target.name]: event.target.value,
       });
     }
   };
-  //render modal
-  renderModal = (e) => {
-    let { selectedAvailability , selectedDate} = this.state;
-    let { errors, message } = this.props.UI;
-    const dateformatted = 'dddd Do MMM'
+//   render modal
+    const renderModal = (e) => {
+      // let { errors, message } = this.props.UI;
+      const dateformatted = "dddd Do MMM";
 
-    let { suburb, postcode } = this.props.data.availabilities;
-    let {
-      bookingTime,
-      location,
-      marketplace,
-      item,
-      price,
-      paymentMethod,
-      buyerName,
-      buyerEmail,
-      buyerNumber,
-      termsConditions,
-    } = this.state.modalInfo;
-    return (
-      <div className={this.state.showModal ? "modalCont" : "hideModal"}>
-        <div className="modal-content">
-          <h2 className="modalMessage">{dateFns.format(selectedDate, dateformatted)}</h2>
-          <span
-            className="close"
-            onClick={() => {
-              this.onModalClose();
-            }}
-          >
-            &times;
-          </span>
+      //TODO: need to add on the backend
+      // let { suburb, postcode } = this.props.data.availabilities;
+      let {
+        bookingTime,
+        location,
+        marketplace,
+        item,
+        price,
+        paymentMethod,
+        buyerName,
+        buyerEmail,
+        buyerNumber,
+        termsConditions,
+        selectedAvailability,
+        showModal
+      } = modal;
+      return (
+        <div className={showModal ? "modalCont" : "hideModal"}>
+          <div className="modal-content">
+            <h2 className="modalMessage">
+              {dateFns.format(selectedDate, dateformatted)}
+            </h2>
+            <span
+              className="close"
+              onClick={() => {
+                onModalClose();
+              }}
+            >
+              &times;
+            </span>
 
-          {errors || message === null ? (
-            <Fragment>
-              <form
-                className="modalForm"
-                onSubmit={this.modalSubmit}
-                onChange={this.handleModalChange}
-              >
-                <label>Time:</label>
-                <select
-                  value={bookingTime}
-                  name="bookingTime"
-                  className="bookingModalInputs"
-                  required
+            {/* {errors || message === null ? ( */}
+              <Fragment>
+                <form
+                  className="modalForm"
+                  onSubmit={modalSubmit}
+                  onChange={handleModalChange}
                 >
-                  <option value="" disabled selected hidden>
-                    Book a Time
-                  </option>
-                  {TwentyFourHourTime30mins.map((time) => {
-                    if (
-                      time[0] > selectedAvailability[0] &&
-                      time[1] <= selectedAvailability[1]
-                    ) {
-                      return (
-                        <option key={uuid()} value={`${time[0]}-${time[1]}`}>
-                          {" "}
-                          {`${time[0]}-${time[1]}`}
-                        </option>
-                      );
-                    }
-                  })}
-                </select>
+                  <label>Time:</label>
+                  <select
+                    value={bookingTime}
+                    name="bookingTime"
+                    className="bookingModalInputs"
+                    required
+                  >
+                    <option value="" disabled selected hidden>
+                      Book a Time
+                    </option>
+                    {TwentyFourHourTime30mins.map((time) => {
+                      if (
+                        time[0] > selectedAvailability[0] &&
+                        time[1] <= selectedAvailability[1]
+                      ) {
+                        return (
+                          <option key={uuid()} value={`${time[0]}-${time[1]}`}>
+                            {" "}
+                            {`${time[0]}-${time[1]}`}
+                          </option>
+                        );
+                      }
+                    })}
+                  </select>
 
-                <label>
-                  Location:{" "}
-                  <p className="modalSubTextLocation">
-                    (exact address to be sent on confirmation)
-                  </p>
-                </label>
-                <select type="text" name="location" value={location} required>
-                  <option value="" disabled selected hidden>
-                    Pick a Location
-                  </option>
-                  <option
-                    value={`${suburb}, ${postcode}`}
-                  >{`${suburb}, ${postcode}`}</option>
-                </select>
-                <label>Item:</label>
-                <input type="text" name="item" value={item} required></input>
-                <label>Price:</label>
-                <input type="text" name="price" value={price} required></input>
-                <label>Marketplace:</label>
-                <select
-                  type="text"
-                  name="marketplace"
-                  value={marketplace}
-                  required
-                >
-                  <option value="" disabled selected hidden>
-                    Select Marketplace
-                  </option>
-                  <option value="Facebook">Facebook</option>
-                  <option value="Gumtree">Gumtree</option>
-                </select>
-                <label>Payment Method:</label>
-                <select
-                  type="text"
-                  name="paymentMethod"
-                  value={paymentMethod}
-                  required
-                >
-                  <option value="" disabled selected hidden>
-                    Payment Method
-                  </option>
-                  <option value="Cash">Cash</option>
-                  <option value="PayPal">PayPal</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                </select>
-                <label>Your Name:</label>
-                <input
-                  type="text"
-                  name="buyerName"
-                  value={buyerName}
-                  required
-                ></input>
-                <label>Your Email:</label>
-                <input
-                  type="email"
-                  name="buyerEmail"
-                  value={buyerEmail}
-                  required
-                ></input>
-                <label>Your Number:</label>
-                <input
-                  type="text"
-                  name="buyerNumber"
-                  value={buyerNumber}
-                  required
-                ></input>
-                <p>
-                  <i>Next step the seller will accept/decline the offer</i>
-                </p>
-                <div className="termscondcont">
-                  <p>Agree to Terms and Conditions*</p>
+                  <label>
+                    Location:{" "}
+                    <p className="modalSubTextLocation">
+                      (exact address to be sent on confirmation)
+                    </p>
+                  </label>
+                  <select type="text" name="location" value={location} required>
+                    <option value="" disabled selected hidden>
+                      Pick a Location
+                    </option>
+                    <option
+                      value={`${suburb}, ${postcode}`}
+                    >{`${suburb}, ${postcode}`}</option>
+                  </select>
+                  <label>Item:</label>
+                  <input type="text" name="item" value={item} required></input>
+                  <label>Price:</label>
+                  <input type="text" name="price" value={price} required></input>
+                  <label>Marketplace:</label>
+                  <select
+                    type="text"
+                    name="marketplace"
+                    value={marketplace}
+                    required
+                  >
+                    <option value="" disabled selected hidden>
+                      Select Marketplace
+                    </option>
+                    <option value="Facebook">Facebook</option>
+                    <option value="Gumtree">Gumtree</option>
+                  </select>
+                  <label>Payment Method:</label>
+                  <select
+                    type="text"
+                    name="paymentMethod"
+                    value={paymentMethod}
+                    required
+                  >
+                    <option value="" disabled selected hidden>
+                      Payment Method
+                    </option>
+                    <option value="Cash">Cash</option>
+                    <option value="PayPal">PayPal</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                  </select>
+                  <label>Your Name:</label>
                   <input
-                    type="checkbox"
-                    name="termsConditions"
-                    value={termsConditions}
+                    type="text"
+                    name="buyerName"
+                    value={buyerName}
                     required
                   ></input>
-                </div>
-                <div className="modalBtnCont">
-                  <button>Confirm and Book</button>
-                </div>
-              </form>
-            </Fragment>
-          ) : (
-            <Fragment>
-              {" "}
-              <h2 className="modalMessage">The Next Step..</h2>
-              <p className="modalMessage">Booking at: {bookingTime}</p>
-              <p className="modalMessage">{errors || message}</p>
-              
-            </Fragment>
-          )}
+                  <label>Your Email:</label>
+                  <input
+                    type="email"
+                    name="buyerEmail"
+                    value={buyerEmail}
+                    required
+                  ></input>
+                  <label>Your Number:</label>
+                  <input
+                    type="text"
+                    name="buyerNumber"
+                    value={buyerNumber}
+                    required
+                  ></input>
+                  <p>
+                    <i>Next step the seller will accept/decline the offer</i>
+                  </p>
+                  <div className="termscondcont">
+                    <p>Agree to Terms and Conditions*</p>
+                    <input
+                      type="checkbox"
+                      name="termsConditions"
+                      value={termsConditions}
+                      required
+                    ></input>
+                  </div>
+                  <div className="modalBtnCont">
+                    <button>Confirm and Book</button>
+                  </div>
+                </form>
+              </Fragment>
+            {/* ) : ( */}
+              <Fragment>
+                {" "}
+                <h2 className="modalMessage">The Next Step..</h2>
+                <p className="modalMessage">Booking at: {bookingTime}</p>
+                {/* <p className="modalMessage">{errors || message}</p> */}
+              </Fragment>
+            {/* )} */}
+          </div>
         </div>
-      </div>
-    );
-  };
+      );
+    };
 
   //close modal
-  onModalClose = (e) => {
-    this.props.pageChangeErrorClear();
-    this.setState({
-      showModal: !this.state.showModal,
-      selectedAvailability: [],
-      modalInfo: {
-        marketplace: "",
-        bookingTime: "",
-        location: "",
-        item: "",
-        price: "",
-        paymentMethod: "",
-        buyerName: "",
-        buyerEmail: "",
-        buyerNumber: "",
-        termsConditions: false,
-      },
-    });
-  };
-
-  renderDaySection = () => {
-    const { availabilities } = this.props.data;
-    const { selectedDate } = this.state;
-
-    const headerFormat = "DD MMMM";
-    const dateFormat = "DD-M-YYYY";
-    const formattedDate = dateFns.format(selectedDate, dateFormat);
-
-    if (formattedDate in availabilities) {
-      return (
-        <Fragment>
-          <p>{dateFns.format(selectedDate, headerFormat)}</p>
-          <p>Availibilites from:</p>
-          <p>{`${availabilities[formattedDate][0]} - ${availabilities[formattedDate][1]}`}</p>
-        </Fragment>
-      );
-    } else {
-      return (
-        <Fragment>
-          <p>{dateFns.format(selectedDate, headerFormat)}</p>
-          <p>No availabilities</p>
-        </Fragment>
-      );
-    }
+  const onModalClose = (e) => {
+    setModal(initialStateModal);
   };
 
   //google autocomplete handlers auto-fill bug
-  onFocus = (event) => {
+  const onFocus = (event) => {
     if (event.target.autocomplete) {
       event.target.autocomplete = "";
     }
   };
-  onBlur = (event) => {
+  const onBlur = (event) => {
     if (this.state.locationCheck === false) {
       event.target.value = "";
     }
   };
-  handleChange = (event) => {
+  const handleChange = (event) => {
     this.setState({
       [event.target.name]: event.target.value,
     });
   };
 
-  handleAddressSubmit = (event) => {
+  const handleAddressSubmit = (event) => {
     event.preventDefault();
     if (event.target.id === "checkDistance") {
       const locationData = {
@@ -529,191 +535,180 @@ class Calendar extends Component {
       this.props.CalculateDistance(locationData);
     }
   };
-  
 
-  render() {
-    
-    const { availabilities } = this.props.data;
-    const { errors } = this.props.UI;
-    const {calculatedDistance } = this.props.user;
-    const { transportMethod } = this.state;
+  let availabilities = calendar.availabilities;
+  let { state, suburb, postcode } = calendar;
 
+  const { transportMethod, calculatedDistance, calculatedDuration } = location;
 
-  
- 
-    return (
-      <div className="calendarContainer">
-        {/* about section */}
-        <div className="aboutSection">
-          <div className="calendarImage">
-            <img
-              className="exchangeimg"
-              src={require("../../images/exchangeimg.svg")}
-             alt="calendar images"></img>
-          </div>
-          <div className="pageDescription">
-            <div className="pageDescriptionContainer">
-              <p>
-                You're viewing <b>Hilary's</b> G'Drop
-              </p>
-              <p>
-                <b>G'drop makes re-sellling easier!</b>
-              </p>
-              <p>
-                Continue to discover make a sale from Gumtree, Facebook
-                marketplace, but just make it easier by cutting out the back and
-                fourth with delivery, payment and scheduling help.
-              </p>
-            </div>
-          </div>
+  return (
+    <div className="calendarContainer">
+      {/* about section */}
+      <div className="aboutSection">
+        <div className="calendarImage">
+          <img
+            className="exchangeimg"
+            src={exchangeimg}
+            alt="calendar images"
+          ></img>
         </div>
-
-        {/* distance calculator */}
-
-        <div className="distanceSection">
-          <div></div>
-          <div className="distanceCalculator">
-            <form
-              onSubmit={this.handleAddressSubmit}
-              onChange={this.handleChange}
-              autoComplete="off"
-              id="checkDistance"
-            >
-              <input
-                className="hiddenInput"
-                autoComplete="false"
-                name="hidden"
-                type="text"
-              ></input>
-              <div>
-                <h3>Distance and options to your address</h3>
-                <Autocomplete
-                  data-id="0"
-                  name="autoLocation"
-                  className="checkDistanceInput"
-                  required
-                  onBlur={this.onBlur}
-                  placeholder="Select Location"
-                  onPlaceSelected={(place) => {
-                    this.setState((prevState) => ({
-                      ...prevState,
-                      exactLocation: place.formatted_address,
-                      postcode:
-                        place.address_components[
-                          place.address_components.length - 1
-                        ].long_name,
-                      state:
-                        place.address_components[
-                          place.address_components.length - 3
-                        ].short_name,
-                      locationCheck: true,
-                    }));
-                  }}
-                  types={["address"]}
-                  componentRestrictions={{ country: "au" }}
-                  onFocus={this.onFocus}
-                />
-              </div>
-
-              <h4>Transport Method</h4>
-              <div className="transportMethodBtns">
-                <select
-                  name="transportMethod"
-                  className="editTimeInputs"
-                  value={transportMethod}
-                  required
-                >
-                  <option value="driving" selected>
-                    Driving
-                  </option>
-                  <option value="walking">Walking</option>
-                  <option value="bicycling">Bicycle</option>
-                  <option value="transit">Public Transport</option>
-                </select>
-
-                <button type="submit" className="settingsBtn">
-                  Discover
-                </button>
-              </div>
-              {calculatedDistance !== null ? (
-                <div>
-                  <p className="distanceCalcText">
-                    {" "}
-                    <b>Duration by {transportMethod}: </b>{" "}
-                    {calculatedDistance.duration}{" "}
-                  </p>
-                  <p className="distanceCalcText">
-                    <b>Distance to seller:</b> {calculatedDistance.distance}
-                  </p>
-                </div>
-              ) : null}
-            </form>
-          </div>
-          <div className="pickupLocations">
-            <h3>Pick up location(s) Options:</h3>
-            {/* TODO: hide api key */}
-            {/* TODO: change to a loading or not loading so they don't see the empty map */}
-            <img
-              src={`https://maps.googleapis.com/maps/api/staticmap?center=${availabilities.suburb}+${availabilities.state}+AU&zoom=14&size=300x300&markers=color:red||${availabilities.suburb}+${availabilities.state}+AU&key=AIzaSyAMx8UE3xmQW9t1o1pN6tsaBsaXM3y8LpM`}
-              className="mapImg"
-             alt="calendar images"></img>
+        <div className="pageDescription">
+          <div className="pageDescriptionContainer">
             <p>
-              {availabilities.suburb} {availabilities.postcode}
+              You're viewing <b>Hilary's</b> G'Drop
             </p>
-            <p>{availabilities.state}</p>
+            <p>
+              <b>G'drop makes re-sellling easier!</b>
+            </p>
+            <p>
+              Continue to discover make a sale from Gumtree, Facebook
+              marketplace, but just make it easier by cutting out the back and
+              fourth with delivery, payment and scheduling help.
+            </p>
           </div>
         </div>
-
-        <div className="transactionOptions">
-          <div className="deliveryMethods">
-            <img
-              className="deliveryimg"
-              src={require("../../images/deliverymethod.svg")}
-             alt="calendar images"></img>
-            <div className="deliveryMethodsText">
-              <h3>Delivery:</h3>
-              <p>Delivery Available: No</p>
-              <p>Charge fee for delivery: No</p>
-              <h3>Postage: </h3>
-              <p>No</p>
-            </div>
-          </div>
-
-          <div className="paymentMethods">
-            <img
-              className="paymentimg"
-              src={require("../../images/paymentmethod.svg")}
-             alt="calendar images"></img>
-            <div className="paymentMethodsText">
-              <h3>Payment Preference:</h3>
-              <p>Cash, Paypal, Bank Transfer</p>
-              <h3>Deposit Required for delivery:</h3>
-              <p>Delivery N/A</p>
-            </div>
-          </div>
-        </div>
-
-        {errors !== null ? (
-          <div className="calendar">
-            <p>{errors.error}</p>
-          </div>
-        ) : Object.keys(availabilities).length ? (
-          <Fragment>
-            <div className="calendar">
-              {this.renderHeader()}
-              {this.renderDays()}
-              {this.renderCells()}
-              {this.renderModal()}
-            </div>
-
-            {/* <div className="calendar">{this.renderDaySection()}</div> */}
-          </Fragment>
-        ) : null}
       </div>
-    );
-  }
+
+      {/* distance calculator */}
+
+      <div className="distanceSection">
+        <div className="distanceCalculator">
+          <form
+            onSubmit={handleAddressSubmit}
+            onChange={handleChange}
+            autoComplete="off"
+            id="checkDistance"
+          >
+            <input
+              className="hiddenInput"
+              autoComplete="false"
+              name="hidden"
+              type="text"
+            ></input>
+            <div>
+              <h3>Distance and options to your address</h3>
+              <Autocomplete
+                data-id="0"
+                name="autoLocation"
+                className="checkDistanceInput"
+                required
+                onBlur={onBlur}
+                placeholder="Select Location"
+                onPlaceSelected={(place) => {
+                  setLocation((prevState) => ({
+                    ...prevState,
+                    exactLocation: place.formatted_address,
+                    postcode:
+                      place.address_components[
+                        place.address_components.length - 1
+                      ].long_name,
+                    state:
+                      place.address_components[
+                        place.address_components.length - 3
+                      ].short_name,
+                    locationCheck: true,
+                  }));
+                }}
+                types={["address"]}
+                componentRestrictions={{ country: "au" }}
+                onFocus={onFocus}
+              />
+            </div>
+
+            <h4>Transport Method</h4>
+            <div className="transportMethodBtns">
+              <select
+                name="transportMethod"
+                className="editTimeInputs"
+                value={transportMethod}
+                required
+              >
+                <option value="driving" selected>
+                  Driving
+                </option>
+                <option value="walking">Walking</option>
+                <option value="bicycling">Bicycle</option>
+                <option value="transit">Public Transport</option>
+              </select>
+
+              <button type="submit" className="settingsBtn">
+                Discover
+              </button>
+            </div>
+            {calculatedDistance !== null ? (
+              <div>
+                <p className="distanceCalcText">
+                  {" "}
+                  <b>Duration by {transportMethod}: </b> {calculatedDuration}{" "}
+                </p>
+                <p className="distanceCalcText">
+                  <b>Distance to seller:</b> {calculatedDistance}
+                </p>
+              </div>
+            ) : null}
+          </form>
+        </div>
+        <div className="pickupLocations">
+          <h3>Pick up location(s) Options:</h3>
+          {/* TODO: hide api key */}
+          {/* TODO: change to a loading or not loading so they don't see the empty map */}
+          <img
+            src={`https://maps.googleapis.com/maps/api/staticmap?center=${suburb}+${state}+AU&zoom=14&size=300x300&markers=color:red||${suburb}+${state}+AU&key=AIzaSyAMx8UE3xmQW9t1o1pN6tsaBsaXM3y8LpM`}
+            className="mapImg"
+            alt="calendar images"
+          ></img>
+          <p>
+            {suburb} {postcode}
+          </p>
+          <p> {state}</p>
+        </div>
+      </div>
+
+      <div className="transactionOptions">
+        <div className="deliveryMethods">
+          <img
+            className="deliveryimg"
+            src={deliverymethod}
+            alt="calendar images"
+          ></img>
+          <div className="deliveryMethodsText">
+            <h3>Delivery:</h3>
+            <p>Delivery Available: No</p>
+            <p>Charge fee for delivery: No</p>
+            <h3>Postage: </h3>
+            <p>No</p>
+          </div>
+        </div>
+
+        <div className="paymentMethods">
+          <img
+            className="paymentimg"
+            src={paymentimg}
+            alt="calendar images"
+          ></img>
+          <div className="paymentMethodsText">
+            <h3>Payment Preference:</h3>
+            <p>Cash, Paypal, Bank Transfer</p>
+            <h3>Deposit Required for delivery:</h3>
+            <p>Delivery N/A</p>
+          </div>
+        </div>
+      </div>
+
+      {/* {errors !== null ? (
+        <div className="calendar">
+          <p>{errors.error}</p>
+        </div>
+      ) : Object.keys(availabilities).length ? ( */}
+      <Fragment>
+        <div className="calendar">
+          {header()}
+          {renderDays()}
+          {renderCells()}
+          {renderModal()}
+        </div>
+      </Fragment>
+      {/* ) : null} */}
+    </div>
+  );
 }
-
-
-
-export default Calendar;

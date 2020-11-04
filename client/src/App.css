@@ -237,7 +237,7 @@ footer {
 .footerContainer{
   margin-top: 3em;
 }
-.submitButton {
+.submitButton , .submitLogin{
   background-color: #bedac4;
   color: #1d3382;
   padding: 0.4em 1.2em;

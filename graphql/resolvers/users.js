@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const { User } = require("../../models");
+const { User, Availabilities, Bookings } = require("../../models");
 const { UserInputError, AuthenticationError } = require("apollo-server");
 const jwt = require("jsonwebtoken");
 const { Op } = require("sequelize");
@@ -22,7 +22,7 @@ module.exports = {
           order: [["createdAt", "DESC"]],
         });
 
-        users = users.map(otherUser => {
+        users = users.map((otherUser) => {
           const latestMessage = allUserMessages.find(
             (m) => m.from === otherUser.username || m.to === otherUser.username
           );
@@ -37,61 +37,57 @@ module.exports = {
       }
     },
 
-
     login: async (_, args) => {
-        const { username, password } = args;
-        let errors = {};
-        console.log("working")
-     
-        try {
-          if (username.trim() === "")
-            errors.username = "Username must not be empty";
-          if (password === "") errors.password = "Password must not be empty";
-  
-          if (Object.keys(errors).length > 0) {
-            throw new UserInputError("Bad Input", { errors });
-          }
-  
-          const user = await User.findOne({
-            where: { username },
-          });
-  
-          if (!user) {
-            errors.username = "User not found";
-            throw new UserInputError("User not found", { errors });
-          }
-  
-          //the graphql schema won't expose the password becuase we aren't calling it
-          const correctPassword = await bcrypt.compare(password, user.password);
-          if (!correctPassword) {
-            errors.password = "password is incorrect";
-            throw new UserInputError("Password is incorrect", { errors });
-          }
-          //could change this to a larger time
-          const token = jwt.sign({ username , userId: user.userId }, process.env.JWT_SECRET, {
-            expiresIn: 60 * 60,
-          });
-          console.log(token)
-  
-          return {
-            ...user.toJSON(),
-            token: token,
-          };
-  
-          return user;
-        } catch (err) {
-          console.log(err);
-          throw err;
+      const { username, password } = args;
+      let errors = {};
+
+      try {
+        if (username.trim() === "")
+          errors.username = "Username must not be empty";
+        if (password === "") errors.password = "Password must not be empty";
+
+        if (Object.keys(errors).length > 0) {
+          throw new UserInputError("Bad Input", { errors });
         }
-      },
+
+        const user = await User.findOne({
+          where: { username },
+        });
+
+        if (!user) {
+          errors.username = "User not found";
+          throw new UserInputError("User not found", { errors });
+        }
+
+        //the graphql schema won't expose the password becuase we aren't calling it
+        const correctPassword = await bcrypt.compare(password, user.password);
+        if (!correctPassword) {
+          errors.password = "password is incorrect";
+          throw new UserInputError("Password is incorrect", { errors });
+        }
+        //could change this to a larger time This is where you user info is stored
+        const token = jwt.sign({ username ,userId : user.userId }, process.env.JWT_SECRET, {
+          expiresIn: 60 * 60,
+        });
+   
+console.log(user.userId)
+        return {
+          ...user.toJSON(),
+          userId: user.userId,
+          token: token,
+        };
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
   },
-  
+
   Mutation: {
     register: async (_, args) => {
       let { username, email, password, confirmPassword } = args;
       let errors = {};
       try {
-        
         //Validate input data adn checks if they are empty
         if (email.trim() === "") errors.email = "Email must not be empty";
         if (username.trim() === "")
@@ -107,10 +103,9 @@ module.exports = {
         if (Object.keys(errors).length > 0) {
           throw errors;
         }
-        
+
         //encrypt password : []
         password = await bcrypt.hash(password, 6);
-        
 
         const user = await User.create({
           username,
@@ -119,9 +114,8 @@ module.exports = {
         });
 
         return user;
-
       } catch (err) {
-          //Checks if sequelize has an error 
+        //Checks if sequelize has an error
         if (err.name === "SequelizeUniqueConstraintError") {
           err.errors.forEach(
             (e) =>

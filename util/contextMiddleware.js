@@ -19,7 +19,7 @@ module.exports = (context) => {
   }
   if (token) {
     jwt.verify(token, process.env.JWT_SECRET, (err, decodedToken) => {
-      // console.log(user);
+      
       context.user = decodedToken;
     });
   }

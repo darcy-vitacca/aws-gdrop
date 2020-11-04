@@ -1,6 +1,13 @@
 //Core
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
+import footerImg from "../images/footerimg.svg";
+import footerLogo from "../images/footerlogo.svg";
+import facebook from "../images/facebook.svg";
+import twitter from "../images/twitter.svg";
+import instagram from "../images/instagram.svg";
+import linkedin from "../images/linkedin.svg";
+import youtube from "../images/youtube.svg";
 
 //Components
 
@@ -19,7 +26,7 @@ class Nav extends Component {
         <Link to="/comingsoon"></Link>
         <img
           className="footerimg"
-          src={require("../images/footerimg.svg")}
+          src={footerImg}
           alt="footer link"
         ></img>
         <footer>
@@ -28,7 +35,7 @@ class Nav extends Component {
               <a href="https://gdrop.co/">
                 <img
                   className="footerLogo"
-                  src={require("../images/footerlogo.svg")}
+                  src={footerLogo}
                   alt="footer link"
                 ></img>
               </a>
@@ -82,35 +89,35 @@ class Nav extends Component {
               <Link to="/comingsoon">
                 <img
                   className="footerSocialImages"
-                  src={require("../images/facebook.svg")}
+                  src={facebook}
                   alt="footer link"
                 ></img>
               </Link>
               <Link to="/comingsoon">
                 <img
                   className="footerSocialImages"
-                  src={require("../images/instagram.svg")}
+                  src={instagram}
                   alt="footer link"
                 ></img>
               </Link>
               <Link to="/comingsoon">
                 <img
                   className="footerSocialImages"
-                  src={require("../images/twitter.svg")}
+                  src={twitter}
                   alt="footer link"
                 ></img>
               </Link>
               <Link to="/comingsoon">
                 <img
                   className="footerSocialImages"
-                  src={require("../images/youtube.svg")}
+                  src={youtube}
                   alt="footer link"
                 ></img>
               </Link>
               <Link to="/comingsoon">
                 <img
                   className="footerSocialImages"
-                  src={require("../images/linkedin.svg")}
+                  src={linkedin}
                   alt="footer link"
                 ></img>
               </Link>

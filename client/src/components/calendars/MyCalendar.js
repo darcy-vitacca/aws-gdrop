@@ -1,132 +1,216 @@
 //Core
-import React, { Component, Fragment } from "react";
-
+import React, { Fragment, useState, useEffect } from "react";
+import { useAuthDispatch, useAuthState } from "../../context/auth";
+import { useCalendarDispatch, useCalendarState } from "../../context/calendar";
+import { gql, useLazyQuery, useMutation } from "@apollo/client";
 import { Link } from "react-router-dom";
 import dateFns from "date-fns";
-import "../../css/calendar.css";
+
+import deletedash from "../../images/deletedash.png";
+import "../../css/calendar.css"
 
 //Packages
-import { v4 as uuid } from 'uuid';
-import { ScaleLoader } from "react-spinners";
+import { v4 as uuid } from "uuid";
+// import { ScaleLoader } from "react-spinners";
 //Dropdowns
 const { TwentyFourHourTime } = require("../../util/dropdowns");
 
-class MyCalendar extends Component {
-  constructor() {
-    super();
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.saveChanges = this.saveChanges.bind(this);
-    this.state = {
-      currentMonth: new Date(),
-      selectedDate: new Date(),
-      dayMode: false,
-      fetchCalendar: false,
-      editing: false,
-      TwentyFourHourTime: TwentyFourHourTime,
-      time0: "",
-      time1: "",
-    };
-  }
-
-  componentWillUnmount() {
-    if (this.props.UI.errors !== null) {
-      this.props.pageChangeErrorClear();
-    }
-    if (this.props.UI.message !== null) {
-      this.props.pageChangeErrorClear();
+//graphql
+const GET_MY_CALENDAR = gql`
+  query getMyCalendar($userId: String!) {
+    getMyCalendar(userId: $userId) {
+      availabilities {
+        date
+        start
+        end
+        uuid
+      }
+      bookings {
+        date
+        start
+        end
+        bookingConfirmed
+        uuid
+      }
+      state suburb postcode
     }
   }
-  componentWillReceiveProps(nextProps) {
-    if (
-      nextProps.user.credentials.userId !== undefined &&
-      this.state.fetchCalendar !== true
-    ) {
-      this.props.GetMyCalendar(
-        nextProps.user.credentials.userId,
-        this.props.history
-      );
-      this.setState({ fetchCalendar: !this.state.fetchCalendar });
+`;
+const SET_AVAILABILITIES = gql`
+  mutation setAvail($input: [availabilities]!) {
+    setAvail(input: $input) {
+          message
     }
-
   }
- 
-  //TODO: handle no availibilites
-  //TODO: when unmount change editing to false
-  //TODO: bind functions where needed
-  //TODO: when suubmitting new dates they aren't coming up in the dom
-  //TODO: not updating new months outside of the day 
-  //TODO: on unmount say make sure you want to save changes 
-  //TODO: when going from home it's stuck on loading
-  //TODO: add on signup calendar
+`;
 
-  // //HEADER //HEADER //HEADER //HEADER //HEADER //HEADER
-  handleChange = (e) => {
+//TODO: handle no availibilites
+//TODO: when unmount change editing to false
+//TODO: bind functions where needed
+//TODO: when suubmitting new dates they aren't coming up in the dom
+//TODO: not updating new months outside of the day
+//TODO: on unmount say make sure you want to save changes
+//TODO: when going from home it's stuck on loading
+//TODO: add on signup calendar
+
+export default function MyCalendar(props) {
+  const AuthDispatch = useAuthDispatch();
+  const { user } = useAuthState();
+
+  const CalendarDispatch = useCalendarDispatch();
+  const { calendar } = useCalendarState();
+
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const [edit, setEditing] = useState({
+    editing: false,
+    time0: "",
+    time1: "",
+  });
+
+  const [
+    getMyCalendar,
+    { loading: calendarLoading, data: calendarData, errors },
+  ] = useLazyQuery(GET_MY_CALENDAR, {
+    onError: (err) => console.log(err),
+  });
+
+  const [setAvailabilities] = useMutation(SET_AVAILABILITIES, {
+    onError: (err) => console.log(err),
+  });
+
+  useEffect(() => {
+    getMyCalendar({ variables: { userId: user.userId } });
+    if (calendarData) {
+      CalendarDispatch({
+        type: "SET_MY_CALENDAR",
+        payload: {
+          availabilities: calendarData.getMyCalendar.availabilities.reduce(
+            (obj, item) => Object.assign(obj, { [item.date]: item }),
+            {}
+          ),
+          bookings: calendarData.getMyCalendar.bookings.reduce(
+            (obj, item) => Object.assign(obj, { [item.date]: item }),
+            {}
+          ),
+          state: calendarData.getMyCalendar.state,
+          suburb: calendarData.getMyCalendar.suburb,
+          postcode: calendarData.getMyCalendar.postcode,
+        },
+      });
+    }
+  }, [calendarData]);
+
+  if (errors) {
+    console.log(errors);
+  }
+
+  const handleChange = (e) => {
     if (e.target.id === "time0") {
-      this.setState({ time0: e.target.value });
+      setEditing({ ...edit, time0: e.target.value });
     } else if (e.target.id === "time1") {
-      this.setState({ time1: e.target.value });
+      setEditing({ ...edit, time1: e.target.value });
     }
   };
 
-  handleSubmit = (e) => {
+  const addAvailability = (e) => {
     e.preventDefault();
-    const { selectedDate } = this.state;
-    let { time0, time1 } = this.state;
+    const { time0, time1 } = edit;
     const dateFormat = "DD-M-YYYY";
     const formattedDate = dateFns.format(selectedDate, dateFormat);
 
     let newDate = {
-      [formattedDate]: [time0, time1],
+      [formattedDate]: { start: time0, end: time1, date: formattedDate },
     };
-    this.props.UpdateAvailibilites(newDate);
+
+    CalendarDispatch({
+      type: "ADD_AVAILABILITY",
+      payload: newDate,
+    });
   };
-  saveChanges = (e) =>{
-    const { editing } = this.state;
-    const { availabilities } = this.props.user;
-    this.setState({ editing: !editing })
-    this.props.SaveAvailbilities(availabilities)
 
-  }
+  const logout = () => {
+    AuthDispatch({ type: "LOGOUT" });
+    props.history.push("/login");
+  };
 
-  renderHeader() {
+  const UpdateAvailibilites = (e) => {
+    setEditing({ editing: !editing });
+    setAvailabilities({
+      variables: {
+        input: Object.entries(calendar.availabilities).map((e) => {
+          return {
+            date: e[1].date,
+            start: e[1].start,
+            end: e[1].end,
+          };
+        }),
+      },
+    });
+  };
+
+  // //HEADER //HEADER //HEADER //HEADER //HEADER //HEADER
+  const header = () => {
+    let availabilities = calendar.availabilities;
     const dateFormat = "MMMM YYYY";
-
+    let currentMonthLimit = new Date();
     return (
       <div className="header row flex-middle">
         <div className="col col-start">
-          <div className="icon" onClick={this.prevMonth}>
-            chevron_left
-          </div>
+          {dateFns.isAfter(
+            dateFns.format(currentMonth, dateFormat),
+            dateFns.format(currentMonthLimit, dateFormat)
+          ) ? (
+            <div className="icon" onClick={prevMonth}>
+              chevron_left
+            </div>
+          ) : (
+            <div className="iconDisabled" onClick={prevMonth}>
+              chevron_left
+            </div>
+          )}
         </div>
         <div className="col col-center">
-          <span>{dateFns.format(this.state.currentMonth, dateFormat)}</span>
+          <span>Availability</span>
+          <span className="monthTextCalendar">
+            {dateFns.format(currentMonth, dateFormat)}
+          </span>
         </div>
-        <div className="col col-end" onClick={this.nextMonth}>
+        <div className="col col-end" onClick={nextMonth}>
           <div className="icon">chevron_right</div>
         </div>
       </div>
     );
-  }
-
-  nextMonth = () => {
-    this.setState({
-      currentMonth: dateFns.addMonths(this.state.currentMonth, 1),
-    });
   };
 
-  prevMonth = () => {
-    this.setState({
-      currentMonth: dateFns.subMonths(this.state.currentMonth, 1),
-    });
+  const nextMonth = () => {
+    setCurrentMonth(dateFns.addMonths(currentMonth, 1));
+  };
+
+  const prevMonth = () => {
+    const dateFormat = "MMMM YYYY";
+    let currentMonthLimit = new Date();
+    if (
+      dateFns.isAfter(
+        dateFns.format(currentMonth, dateFormat),
+        dateFns.format(currentMonthLimit, dateFormat)
+      )
+    ) {
+      setCurrentMonth(dateFns.subMonths(currentMonth, 1));
+    }
+  };
+
+  const onDateClick = (day) => {
+    setSelectedDate(day);
   };
 
   //DAYS //DAYS //DAYS //DAYS //DAYS //DAYS //DAYS
-  renderDays() {
+  const renderDays = () => {
     const dateFormat = "dddd";
     const days = [];
 
-    let startDate = dateFns.startOfWeek(this.state.currentMonth);
+    let startDate = dateFns.startOfWeek(currentMonth);
 
     for (let i = 0; i < 7; i++) {
       days.push(
@@ -144,16 +228,18 @@ class MyCalendar extends Component {
     }
 
     return <div className="days row">{days}</div>;
-  }
+  };
 
   //CELLS //CELLS //CELLS  //CELLS  //CELLS  //CELLS
-  renderCells() {
-    const { availabilities } = this.props.user;
-    const { currentMonth, selectedDate } = this.state;
+  const renderCells = () => {
+    let availabilities = calendar.availabilities;
+    // console.log(availabilities)
+
     const monthStart = dateFns.startOfMonth(currentMonth);
     const monthEnd = dateFns.endOfMonth(monthStart);
     const startDate = dateFns.startOfWeek(monthStart);
     const endDate = dateFns.endOfWeek(monthEnd);
+    let currentDay = new Date();
 
     //Date constrcutor for dateId
     let monthRef = currentMonth.getMonth() + 1;
@@ -170,54 +256,55 @@ class MyCalendar extends Component {
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
         formattedDate = dateFns.format(day, dateFormat);
+
         let dateId = `${formattedDate}-${monthRef}-${yearRef}`;
         const cloneDay = day;
         days.push(
           <div
             className={`col cell ${
-              !dateFns.isSameMonth(day, monthStart)
+              !dateFns.isSameMonth(day, monthStart) || day < currentDay
                 ? "disabled"
                 : dateFns.isSameDay(day, selectedDate)
                 ? "selected"
                 : ""
-            }
-            ${
-              dateId in availabilities && dateFns.isSameMonth(day, monthStart)
+            } ${
+              dateId in availabilities &&
+              dateFns.isSameMonth(day, monthStart) &&
+              day >= currentDay
                 ? "available"
                 : ""
             }`}
             key={day}
-            onClick={() => this.onDateClick(dateFns.parse(cloneDay))}
+            onClick={() => onDateClick(dateFns.parse(cloneDay))}
           >
-            {
-              //Checks if dateId matches an availibility and either puts out an emmpty day or the time and also checks for same month
-              dateId in availabilities &&
-              dateFns.isSameMonth(day, monthStart) ? (
-                <Fragment>
-                  <span
-                    className="number"
-                    id={`${formattedDate}-${monthRef}-${yearRef}`}
-                    key={uuid()}
-                  >
-                    {formattedDate}
-                  </span>
+            {//Checks if dateId matches an availibility and either puts out an emmpty day or the time and also checks for same month
+            dateId in availabilities &&
+            dateFns.isSameMonth(day, monthStart) &&
+            day >= currentDay ? (
+              <Fragment>
+                <span
+                  className="number"
+                  id={`${formattedDate}-${monthRef}-${yearRef}`}
+                  key={uuid()}
+                >
+                  {formattedDate}
+                </span>
 
-                  <span className="availabilitesTime">{`${
-                    availabilities[`${dateId}`][0]
-                  } - ${availabilities[`${dateId}`][1]}`}</span>
-                </Fragment>
-              ) : (
-                <Fragment>
-                  <span
-                    className="number"
-                    id={`${formattedDate}-${monthRef}-${yearRef}`}
-                    key={uuid()}
-                  >
-                    {formattedDate}
-                  </span>
-                </Fragment>
-              )
-            }
+                <span className="availabilitiesTime">{`${
+                  availabilities[`${dateId}`]["start"]
+                } - ${availabilities[`${dateId}`]["end"]}`}</span>
+              </Fragment>
+            ) : (
+              <Fragment>
+                <span
+                  className="number"
+                  id={`${formattedDate}-${monthRef}-${yearRef}`}
+                  key={uuid()}
+                >
+                  {formattedDate}
+                </span>
+              </Fragment>
+            )}
           </div>
         );
         day = dateFns.addDays(day, 1);
@@ -230,24 +317,18 @@ class MyCalendar extends Component {
       days = [];
     }
     return <div className="body">{rows}</div>;
-  }
-
-  onDateClick = (day) => {
-    this.setState({
-      selectedDate: day,
-    });
   };
-  timeRange = () => {
-    const { selectedDate, time0, time1 } = this.state;
+
+  const timeRange = () => {
+    const { time0, time1 } = edit;
+    let availabilities = calendar.availabilities;
     const dateFormat = "DD-M-YYYY";
     const formattedDate = dateFns.format(selectedDate, dateFormat);
-    const { availabilities } = this.props.user;
 
     return (
       <Fragment>
-       
-        <form onChange={this.handleChange} onSubmit={this.handleSubmit}>
-        <p>Set availibity time</p>
+        <form onChange={handleChange} onSubmit={addAvailability}>
+          <p>Set availibity time</p>
           <select
             name={`${formattedDate} 0`}
             className="editTimeInputs"
@@ -287,28 +368,28 @@ class MyCalendar extends Component {
               );
             })}
           </select>
-          
           <button type="submit">submit</button>
-          {formattedDate in availabilities ? (  <img
-          className="deleteIcon"
-          src={require("../../images/deletedash.png")}
-          alt="Delete Availability"
-          onClick={() => {
-            this.props.DeleteAvailibility(formattedDate);
-          }}
-        ></img>) : null
-        
-  }
+          {formattedDate in availabilities ? (
+            <img
+              className="deleteIcon"
+              src={deletedash}
+              alt="Delete Availability"
+              onClick={() => {
+                CalendarDispatch({
+                  type: "DELETE_AVAILABILITY_DATE",
+                  payload: formattedDate,
+                });
+              }}
+            ></img>
+          ) : null}
         </form>
-       
       </Fragment>
     );
   };
 
-  renderDaySection = () => {
-    const { availabilities } = this.props.user;
-    const { selectedDate, editing } = this.state;
-
+  const renderDaySection = () => {
+    const { editing } = edit;
+    let availabilities = calendar.availabilities;
     const headerFormat = "DD MMMM";
     const dateFormat = "DD-M-YYYY";
     const formattedDate = dateFns.format(selectedDate, dateFormat);
@@ -318,8 +399,8 @@ class MyCalendar extends Component {
         <Fragment>
           <p>{dateFns.format(selectedDate, headerFormat)}</p>
           <p>Availibilites from:</p>
-          <p>{`${availabilities[formattedDate][0]} - ${availabilities[formattedDate][1]}`}</p>
-          {editing ? this.timeRange() : null}
+          <p>{`${availabilities[formattedDate]["start"]} - ${availabilities[formattedDate]["end"]}`}</p>
+          {editing ? timeRange() : null}
         </Fragment>
       );
     } else {
@@ -327,87 +408,65 @@ class MyCalendar extends Component {
         <Fragment>
           <p>{dateFns.format(selectedDate, headerFormat)}</p>
           <p>No availabilities</p>
-          {editing ? this.timeRange() : null}
+          {editing ? timeRange() : null}
         </Fragment>
       );
     }
   };
 
 
-  render() {
-    const { errors, message } = this.props.UI;
-    const {
-      authenticated,
-      loading,
-      credentials: { exactLocation, userId },
-    } = this.props.user;
-    const { editing } = this.state;
-    return (
-      <div>
-        {!loading ? (
-          !authenticated ? (
-            this.props.history.push("/login")
-          ) : (
-            <Fragment>
-              <div className="calendar">
-                <p>My Calendar</p>
-                <p>
-                  {" "}
-                  Link to share with people:{" "}
-                  {/* <a href={`https://g-drop.firebaseapp.com/calendar/${userId}`}>
+  const { editing } = edit;
+  return (
+    <div>
+      <Fragment>
+        <div className="calendar">
+          <p>My Calendar</p>
+          <button onClick={logout}>Logout</button>
+          <p>
+            {" "}
+            Link to share with people:{" "}
+            {/* <a href={`https://g-drop.firebaseapp.com/calendar/${userId}`}>
                   https://g-drop.firebaseapp.com/calendar/{userId}
                   </a>{" "} */}
-                   {/* <a href={`http://localhost:3000/calendar/${userId}`}>
-                   http://localhost:3000/calendar/{userId}
+            {/* <a href={`http://localhost:3000/calendar/${user.userId}`}>
+                   http://localhost:3000/calendar/{user.userId}
                   </a>{" "} */}
-      
-                  <a href={`https://app.gdrop.co/calendar/${userId}`}>
-                  https://app.gdrop.co/calendar/{userId}
-                  </a>{" "}
-          
-                </p>
+            {/* <a href={`https://app.gdrop.co/calendar/${userId}`}>
+              https://app.gdrop.co/calendar/{userId}
+            </a>{" "} */}
+          </p>
 
-                <p>
-                  My location: {exactLocation}. To change click{" "}
-                  <Link to="/settings">here</Link>
-                </p>
-                {!editing ? (
-                  <button onClick={() => this.setState({ editing: !editing })}>
-                    Edit
-                  </button>
-                ) : (
-                  //TODO: need to send the request with updated state
-                  <button onClick={this.saveChanges}>
-                    Save
-                  </button>
-                )}
-                {/* {errors !== null ? (<Fragment>
+          <p>
+            {/* My location: {exactLocation} */}. To change click to settings...{" "}
+            <Link to="/settings">here</Link>
+          </p>
+          {!editing ? (
+            <button onClick={() => setEditing({ editing: !editing })}>
+              Edit
+            </button>
+          ) : (
+            //TODO: need to send the request with updated state
+            <button onClick={() => UpdateAvailibilites()}>Save</button>
+          )}
+          {/* {errors !== null ? (<Fragment>
                   <p>{errors}</p>
                   </Fragment>) : (<Fragment><p>{message}</p></Fragment>)} */}
-                  {errors !== null ? (console.log("here"))
-                  : (console.log("here1"))}
+          {/* {errors !== null ? console.log("here") : console.log("here1")} */}
 
-                {this.renderHeader()}
-                {this.renderDays()}
-                {this.renderCells()}
-              </div>
-              <div className="calendar">{this.renderDaySection()}</div>
-            </Fragment>
-          )
-        ) : (
-          <div className="spinner">
+          {header()}
+          {renderDays()}
+          {renderCells()}
+        </div>
+        <div className="calendar">{renderDaySection()}</div>
+      </Fragment>
+      {/* <div className="spinner">
             {loading === true ? (
               <div>
                 {" "}
                 <ScaleLoader className="spinner" size={240} loading />{" "}
               </div>
             ) : null}{" "}
-          </div>
-        )}
-      </div>
-    );
-  }
+          </div> */}
+    </div>
+  );
 }
-
-
-export default MyCalendar;

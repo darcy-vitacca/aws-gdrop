@@ -1,6 +1,7 @@
 //Core
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
+import logo from "../../images/logo.svg"
 
 import "../../App.css";
 
@@ -128,7 +129,7 @@ class NavFull extends Component {
           <a href="https://gdrop.co/">
           <img
               className="logo"
-              src={require("../../images/logo.svg")}
+              src={logo}
             ></img>
                   </a>
         </div>

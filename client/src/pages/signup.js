@@ -31,8 +31,8 @@ export default function Signup(props) {
     confirmPassword: "",
   });
 
-
   const [errors, setErrors] = useState({});
+
   const [registerUser, { loading }] = useMutation(REGISTER_USER, {
     update: (_, __) => props.history.push("/login"),
     onError: (err) => setErrors(err.graphQLErrors[0].extensions.errors),
@@ -40,7 +40,6 @@ export default function Signup(props) {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log(variables)
     //you have to name and pass variables because it's what the thing accepts
     registerUser({variables});
   };
@@ -70,7 +69,7 @@ export default function Signup(props) {
         <div className="passwordSection">
           <p className={errors.password ? "loginSignupLabel" : null}>
             
-            {errors.password ?? "Password (8 characters in length)"}
+            {errors.password ?? "Password (6 characters in length)"}
             </p>
           <input
             placeholder="Password"

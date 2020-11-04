@@ -27,20 +27,26 @@ module.exports = gql`
     date: String!
     start: String!
     end: String!
+    uuid: String!
   }
   type Bookings {
     date: String!
     start: String!
     end: String!
+    bookingConfirmed: Boolean!
+    uuid: String!
   }
 
 
-  type AvailabilityResponse {
-    availabilities: [Availability]
+  type AvailabilityMessage {
+    message: String!
   }
   type UserCalendar {
     availabilities: [Availability]
     bookings: [Bookings]
+    state: String
+    suburb: String
+    postcode: String
   }
 
   type calculatedData {
@@ -88,7 +94,7 @@ module.exports = gql`
     ): User!
     # COMPLETED
     #seller
-    setAvail(avail: [availabilities]): AvailabilityResponse! #COMPLETED
+    setAvail(input: [availabilities]!): AvailabilityMessage! #COMPLETED
 
     setLocation(
       exactLocation: String!

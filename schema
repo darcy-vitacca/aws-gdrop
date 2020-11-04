@@ -133,3 +133,13 @@ mutation{
   message
   }
 }
+
+mutation setLocation{
+  setLocation( 
+          exactLocation: "3 Clarke St, Blackburn VIC 3130, Australia",
+          postcode: "3130",
+          state: "VIC",
+          suburb: "Blackburn",){
+    location
+}
+}

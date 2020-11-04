@@ -8,7 +8,20 @@ module.exports = {
         const userCalendar = {
           availabilities: [],
           bookings: [],
+          state: "",
+          suburb: "",
+          postcode: ""
         };
+
+
+        const seller = await User.findOne({
+          where: { userId: userId },
+        });
+      
+
+        userCalendar.suburb = seller.suburb
+        userCalendar.state = seller.state
+        userCalendar.postcode = seller.postcode
 
         //Availabilities
         const calendarAvailabilites = await Availabilities.findAll({
@@ -23,8 +36,9 @@ module.exports = {
 
 
        //Bookings
+       //TODO: need to add a bookingConfirmed check or maybe just return them all
         const calendarBookings = await Bookings.findAll({
-          where: { userId: userId , bookingConfirmed : true},
+          where: { userId: userId},
           order: [["date", "ASC"]],
         });
         let pulledBookings = calendarBookings
@@ -32,7 +46,7 @@ module.exports = {
           userCalendar.bookings.push(entry);
         });
         
-        console.log(userCalendar);
+        console.log(userCalendar); 
         return userCalendar;
       } catch (err) {
         console.log(err);
@@ -71,18 +85,9 @@ module.exports = {
     },
   },
   Mutation: {
-    confirmBooking : async(_, args) =>{
-
-      try{
-
-      }catch (err){
-        console.log(err);
-        throw err;
-      }
-
-    },
+ 
     makeBooking : async(_, {userId, date, start, end}) =>{
-      //TODO: check if booking is taken
+      //TODO: check if booking is taken 
       try{
         console.log(userId, date, start, end)
 

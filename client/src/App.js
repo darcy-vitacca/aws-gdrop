@@ -4,6 +4,10 @@ import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import "./App.css";
 
 import ApolloProvider from "./ApolloProvider";
+//When something isn't the export default we destrcuture it
+import { AuthProvider } from "./context/auth";
+import { CalendarProvider } from "./context/calendar";
+import DynamicRoute from "./util/DynamicRoute";
 
 //Pages
 import Nav from "./components/nav/nav";
@@ -22,30 +26,41 @@ import MyCalendar from "./components/calendars/MyCalendar.js";
 import { v4 as uuid } from "uuid";
 import axios from "axios";
 
-
 function App() {
   return (
     <ApolloProvider>
-      <Router>
-        <div className="container">
-          <Route component={Nav} />
-          <div className="AppBody">
-            <Switch>
-              <Route path="/" exact component={Home} />
-              <Route path="/login" component={Login} />
-              <Route path="/signup" component={Signup} />
-              <Route path="/mycalendar" component={MyCalendar} />
-              <Route path="/settings" component={Settings} />
-              <Route path="/contact" component={Contact} />
-              <Route exact path="/calendar/:userid" component={Calendar} />
-              <Route path="/comingsoon" component={ComingSoon} key={uuid()} />
-              <Route path="/beta" component={Beta} key={uuid()} />
-            </Switch>
-          </div>
-          <Route component={Footer} />
-        </div>
-      </Router>
-      </ApolloProvider>
+      <AuthProvider>
+        <CalendarProvider>
+          <Router>
+            <div className="container">
+              <Route component={Nav} />
+              <div className="AppBody">
+                <Switch>
+                  <Route path="/" exact component={Home} />
+                  <DynamicRoute path="/login" component={Login} guest />
+                  <DynamicRoute path="/signup" component={Signup} guest />
+                  <DynamicRoute
+                    path="/mycalendar"
+                    component={MyCalendar}
+                    authenticated
+                  />
+                  <DynamicRoute path="/settings" component={Settings} authenticated/>
+                  <Route path="/contact" component={Contact} />
+                  <Route exact path="/calendar/:userid" component={Calendar} />
+                  <Route
+                    path="/comingsoon"
+                    component={ComingSoon}
+                    key={uuid()}
+                  />
+                  <Route path="/beta" component={Beta} key={uuid()} />
+                </Switch>
+              </div>
+              <Route component={Footer} />
+            </div>
+          </Router>
+        </CalendarProvider>
+      </AuthProvider>
+    </ApolloProvider>
   );
 }
 

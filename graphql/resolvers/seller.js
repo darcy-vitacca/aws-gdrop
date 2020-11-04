@@ -1,17 +1,29 @@
 const { UserInputError, AuthenticationError } = require("apollo-server");
 
-const { Availabilities } = require("../../models");
+const { Availabilities , Bookings} = require("../../models");
 const { User } = require("../../models");
 
 module.exports = {
   Query: {
-    getMyCalendar: async (_, { userId }) => {
+    getMyCalendar: async (_, {userId}, {user}) => {
       try {
+
         const userCalendar = {
           availabilities: [],
           bookings: [],
+          state: "",
+          suburb: "",
+          postcode: ""
         };
 
+        const seller = await User.findOne({
+          where: { userId: userId },
+        });
+
+        userCalendar.suburb = seller.suburb
+        userCalendar.state = seller.state
+        userCalendar.postcode = seller.postcode
+        
         //Availabilities
         const calendarAvailabilites = await Availabilities.findAll({
           where: { userId: userId },
@@ -23,9 +35,11 @@ module.exports = {
         });
       
 
+
        //Bookings
+       //TODO: need to add a bookingConfirmed check or maybe just return them all
         const calendarBookings = await Bookings.findAll({
-          where: { userId: userId , bookingConfirmed : true},
+          where: { userId: userId},
           order: [["date", "ASC"]],
         });
         let pulledBookings = calendarBookings
@@ -33,14 +47,16 @@ module.exports = {
           userCalendar.bookings.push(entry);
         });
         
-        console.log(userCalendar);
+        // console.log(userCalendar); 
         return userCalendar;
       } catch (err) {
         console.log(err);
         throw err;
       }
     },
+  
   },
+      
 
   Mutation: {
     //Set availibilites and if new ones have been set they will be overwritter
@@ -50,6 +66,7 @@ module.exports = {
       { user }
     ) => {
       try {
+        console.log(user)
         if (!user) throw new AuthenticationError("Unauthenticated");
         //TODO: add validation
         const locationDetails = {
@@ -59,11 +76,10 @@ module.exports = {
           suburb: suburb,
         };
 
-        const locationAdded = await User.update(
-          locationDetails,
-          { where: { userId: user.userId } }
-        );
-        
+        const locationAdded = await User.update(locationDetails, {
+          where: { userId: user.userId },
+        });
+
         const location = {
           location: exactLocation,
         };
@@ -74,17 +90,23 @@ module.exports = {
         throw err;
       }
     },
-
-
-
+    //TODO: when this confirms we need to delete all other bookings from other people at the same time 
+    confirmBooking: async (_, args) => {
+      try {
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
 
     setAvail: async (_, args, { user }) => {
       console.log(user);
       try {
         if (!user) throw new AuthenticationError("Unauthenticated");
 
-        let newAvailabilities = JSON.parse(JSON.stringify(args.avail));
-
+        let newAvailabilities = JSON.parse(JSON.stringify(args.input));
+        console.log("here")
+        
         //TODO: check if they are the right inputs and all inputs are present
         newAvailabilities.map((e) => {
           Object.assign(e, {
@@ -106,12 +128,14 @@ module.exports = {
             ],
           }
         );
-      
-    
-        let uiAvailibilites = JSON.parse(JSON.stringify(args.avail));
-        // console.log(uiAvailibilites);
 
-        return availabilites;
+        let uiAvailibilites = JSON.parse(JSON.stringify(args.input));
+        console.log(uiAvailibilites);
+        const AvailabilityMessage = {
+          message: "Success"
+        }
+
+        return AvailabilityMessage;
       } catch (err) {
         console.log(err);
         throw err;
