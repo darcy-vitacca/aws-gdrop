@@ -1,6 +1,6 @@
 //Core
 import React, { Fragment, useState, useEffect } from "react";
-import { useAuthDispatch, useAuthState } from "../../context/auth";
+// import { useAuthDispatch, useAuthState } from "../../context/auth";
 import { useCalendarDispatch, useCalendarState } from "../../context/calendar";
 import { gql, useLazyQuery, useMutation } from "@apollo/client";
 import "../../css/calendar.css";
@@ -13,6 +13,11 @@ import deliverymethod from "../../images/deliverymethod.svg";
 import { v4 as uuid } from "uuid";
 import Autocomplete from "react-google-autocomplete";
 import dateFns from "date-fns";
+import emailjs from "emailjs-com";
+import axios from "axios";
+import { Base64 } from "js-base64";
+import { MoonLoader } from "react-spinners";
+
 //Dropdowns
 const { TwentyFourHourTime30mins } = require("../../util/dropdowns");
 
@@ -40,15 +45,62 @@ const GET_CALENDAR = gql`
   }
 `;
 
-export default function Calendar(props) {
-  const AuthDispatch = useAuthDispatch();
-  const { user } = useAuthState();
+const CALCULATE_DISTANCE = gql`
+  query calculateDistance(
+    $sellerId: String!
+    $buyerLocation: String!
+    $transportMethod: String!
+  ) {
+    calculateDistance(
+      sellerId: $sellerId
+      buyerLocation: $buyerLocation
+      transportMethod: $transportMethod
+    ) {
+      distance
+      duration
+    }
+  }
+`;
+const MAKE_BOOKING = gql`
+  mutation makeBooking(
+    $bookingTime: String!
+    $buyerEmail: String!
+    $buyerName: String!
+    $buyerNumber: String!
+    $item: String!
+    $location: String!
+    $marketplace: String!
+    $paymentMethod: String!
+    $price: String!
+    $selectedDate: String!
+  ) {
+    makeBooking(
+      bookingTime: $bookingTime
+      buyerEmail: $buyerEmail
+      buyerName: $buyerName
+      buyerNumber: $buyerNumber
+      item: $item
+      location: $location
+      marketplace: $marketplace
+      paymentMethod: $paymentMethod
+      price: $price
+      selectedDate: $selectedDate
+    ) {
+      message
+    }
+  }
+`;
 
+export default function Calendar(props) {
   const CalendarDispatch = useCalendarDispatch();
   const { calendar } = useCalendarState();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [map, setMap] = useState({
+    map: false,
+    data: "",
+  });
 
   const initialStateModal = {
     showModal: false,
@@ -76,26 +128,56 @@ export default function Calendar(props) {
   };
 
   const [modal, setModal] = useState(initialStateModal);
-
   const [location, setLocation] = useState(initialStateLocation);
+  const [message, setMessage] = useState(null);
 
-  //   dayMode: false,
-
-  //TODO: bug when changing from this calendar to my calednar
-
+  const [getCalendar, { data: calendarData, errors }] = useLazyQuery(
+    GET_CALENDAR,
+    {
+      onError: (err) => console.log(err),
+      onCompleted: () => {
+        axios
+            /* TODO: hide api key */
+          .post(
+            `https://maps.googleapis.com/maps/api/staticmap?center=${calendarData.getCalendar.suburb}+${calendarData.getCalendar.state}+AU&zoom=14&size=300x300&markers=color:red||${calendarData.getCalendar.suburb}+${calendarData.getCalendar.state}+AU&key=AIzaSyAMx8UE3xmQW9t1o1pN6tsaBsaXM3y8LpM`
+          )
+          .then((res) => {
+            if (res.data) {
+              setMap({
+                map: true,
+                data: res,
+              });
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      },
+    }
+  );
   const [
-    getCalendar,
-    { loading: calendarLoading, data: calendarData, errors },
-  ] = useLazyQuery(GET_CALENDAR, {
+    calculateDistance,
+    { data: locationData, locationErrors },
+  ] = useLazyQuery(CALCULATE_DISTANCE, {
     onError: (err) => console.log(err),
+    onCompleted: (data) => {
+      setLocation({
+        ...location,
+        calculatedDistance: data.calculateDistance.distance,
+        calculatedDuration: data.calculateDistance.duration,
+      });
+    },
   });
-
-  //   const [
-  //     getMap,
-  //     { loading: mapLoading, data: mapData, errors },
-  //   ] = useLazyQuery(GET_CALENDAR, {
-  //     onError: (err) => console.log(err),
-  //   });
+  const [makeBooking, { data: bookingData, bookingErrors }] = useMutation(
+    MAKE_BOOKING,
+    {
+      onError: (err) => console.log(err),
+      onCompleted: (data) =>
+        setMessage(
+          `Message Sent, now awaiting a confirmation from the Hillary.`
+        ),
+    }
+  );
 
   useEffect(() => {
     getCalendar({ variables: { userId: props.match.params.userid } });
@@ -118,10 +200,13 @@ export default function Calendar(props) {
       });
     }
   }, [calendarData]);
+  
+  useEffect(() => {
+    console.log(map);
+  }, [map]);
 
   // //HEADER //HEADER //HEADER //HEADER //HEADER //HEADER
   const header = () => {
-      
     const dateFormat = "MMMM YYYY";
     let currentMonthLimit = new Date();
     return (
@@ -254,9 +339,15 @@ export default function Calendar(props) {
                   {formattedDate}
                 </span>
 
-                <span className="availabilitiesTime">{`${
-                  availabilities[`${dateId}`]["start"]
-                } - ${availabilities[`${dateId}`]["end"]}`}</span>
+                <span
+                  className="availabilitiesTime"
+                  id={`${availabilities[`${dateId}`]["start"]} - ${
+                    availabilities[`${dateId}`]["end"]
+                  }`}
+                  onClick={(e) => onDateClick(e, dateFns.parse(cloneDay))}
+                >{`${availabilities[`${dateId}`]["start"]} - ${
+                  availabilities[`${dateId}`]["end"]
+                }`}</span>
               </Fragment>
             ) : (
               <Fragment>
@@ -284,15 +375,10 @@ export default function Calendar(props) {
   };
 
   const onDateClick = (e, day) => {
-    console.log(e.target);
-    console.log(e.target.innerText);
-    console.log(day);
-    //TODO: need to handle if they click the number
     let selectedAvailability;
-
     if (
       e.target.className === "col cell  available" ||
-      e.target.className === "availabilitesTime" ||
+      e.target.className === "availabilitiesTime" ||
       e.target.className === "col cell selected available"
     ) {
       if (e.target.innerText.includes("\n")) {
@@ -316,13 +402,47 @@ export default function Calendar(props) {
   const modalSubmit = (event) => {
     event.preventDefault();
     const dateFormat = "dddd Do MMMM YYYY";
+    let {
+      bookingTime,
+      location,
+      item,
+      price,
+      paymentMethod,
+      buyerName,
+      buyerEmail,
+      buyerNumber,
+      marketplace,
+    } = modal;
 
     const formData = {
-      ...modal,
       selectedDate: dateFns.format(selectedDate, dateFormat),
+      buyerName: buyerName,
+      bookingTime: bookingTime,
+      buyerNumber: buyerNumber,
+      location: location,
+      buyerEmail: buyerEmail,
+      paymentMethod: paymentMethod,
+      item: item,
+      marketplace: marketplace,
+      price: price,
     };
-    // console.log(formData)
-    this.props.ContactForm(formData, this.props.history);
+
+    makeBooking({ variables: formData });
+    emailjs
+      .send(
+        "service_ofgh1ss",
+        "template_oj4gdbd",
+        formData,
+        "user_7ru8oUIpeipD9H7n6wOaF"
+      )
+      .then(
+        (res) => {
+          console.log(
+            `Message Sent, now awaiting a confirmation from the Hillary.`
+          );
+        },
+        (err) => {}
+      );
   };
 
   const handleModalChange = (event) => {
@@ -338,205 +458,215 @@ export default function Calendar(props) {
       });
     }
   };
-//   render modal
-    const renderModal = (e) => {
-      // let { errors, message } = this.props.UI;
-      const dateformatted = "dddd Do MMM";
+  //   render modal
+  const renderModal = (e) => {
+    const dateformatted = "dddd Do MMM";
+    let {
+      bookingTime,
+      location,
+      marketplace,
+      item,
+      price,
+      paymentMethod,
+      buyerName,
+      buyerEmail,
+      buyerNumber,
+      termsConditions,
+      selectedAvailability,
+      showModal,
+    } = modal;
+    return (
+      <div className={showModal ? "modalCont" : "hideModal"}>
+        <div className="modal-content">
+          <h2 className="modalMessage">
+            {dateFns.format(selectedDate, dateformatted)}
+          </h2>
+          <span
+            className="close"
+            onClick={() => {
+              onModalClose();
+            }}
+          >
+            &times;
+          </span>
 
-      //TODO: need to add on the backend
-      // let { suburb, postcode } = this.props.data.availabilities;
-      let {
-        bookingTime,
-        location,
-        marketplace,
-        item,
-        price,
-        paymentMethod,
-        buyerName,
-        buyerEmail,
-        buyerNumber,
-        termsConditions,
-        selectedAvailability,
-        showModal
-      } = modal;
-      return (
-        <div className={showModal ? "modalCont" : "hideModal"}>
-          <div className="modal-content">
-            <h2 className="modalMessage">
-              {dateFns.format(selectedDate, dateformatted)}
-            </h2>
-            <span
-              className="close"
-              onClick={() => {
-                onModalClose();
-              }}
-            >
-              &times;
-            </span>
-
-            {/* {errors || message === null ? ( */}
-              <Fragment>
-                <form
-                  className="modalForm"
-                  onSubmit={modalSubmit}
-                  onChange={handleModalChange}
+          {message === null ? (
+            <Fragment>
+              <form
+                className="modalForm"
+                onSubmit={modalSubmit}
+                onChange={handleModalChange}
+              >
+                <label>Time:</label>
+                <select
+                  value={bookingTime}
+                  name="bookingTime"
+                  className="bookingModalInputs"
+                  required
                 >
-                  <label>Time:</label>
-                  <select
-                    value={bookingTime}
-                    name="bookingTime"
-                    className="bookingModalInputs"
-                    required
-                  >
-                    <option value="" disabled selected hidden>
-                      Book a Time
-                    </option>
-                    {TwentyFourHourTime30mins.map((time) => {
-                      if (
-                        time[0] > selectedAvailability[0] &&
-                        time[1] <= selectedAvailability[1]
-                      ) {
-                        return (
-                          <option key={uuid()} value={`${time[0]}-${time[1]}`}>
-                            {" "}
-                            {`${time[0]}-${time[1]}`}
-                          </option>
-                        );
-                      }
-                    })}
-                  </select>
+                  <option value="" disabled selected hidden>
+                    Book a Time
+                  </option>
+                  {TwentyFourHourTime30mins.map((time) => {
+                    if (
+                      time[0] > selectedAvailability[0] &&
+                      time[1] <= selectedAvailability[1]
+                    ) {
+                      return (
+                        <option key={uuid()} value={`${time[0]}-${time[1]}`}>
+                          {" "}
+                          {`${time[0]}-${time[1]}`}
+                        </option>
+                      );
+                    }
+                  })}
+                </select>
 
-                  <label>
-                    Location:{" "}
-                    <p className="modalSubTextLocation">
-                      (exact address to be sent on confirmation)
-                    </p>
-                  </label>
-                  <select type="text" name="location" value={location} required>
-                    <option value="" disabled selected hidden>
-                      Pick a Location
-                    </option>
-                    <option
-                      value={`${suburb}, ${postcode}`}
-                    >{`${suburb}, ${postcode}`}</option>
-                  </select>
-                  <label>Item:</label>
-                  <input type="text" name="item" value={item} required></input>
-                  <label>Price:</label>
-                  <input type="text" name="price" value={price} required></input>
-                  <label>Marketplace:</label>
-                  <select
-                    type="text"
-                    name="marketplace"
-                    value={marketplace}
-                    required
-                  >
-                    <option value="" disabled selected hidden>
-                      Select Marketplace
-                    </option>
-                    <option value="Facebook">Facebook</option>
-                    <option value="Gumtree">Gumtree</option>
-                  </select>
-                  <label>Payment Method:</label>
-                  <select
-                    type="text"
-                    name="paymentMethod"
-                    value={paymentMethod}
-                    required
-                  >
-                    <option value="" disabled selected hidden>
-                      Payment Method
-                    </option>
-                    <option value="Cash">Cash</option>
-                    <option value="PayPal">PayPal</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                  </select>
-                  <label>Your Name:</label>
-                  <input
-                    type="text"
-                    name="buyerName"
-                    value={buyerName}
-                    required
-                  ></input>
-                  <label>Your Email:</label>
-                  <input
-                    type="email"
-                    name="buyerEmail"
-                    value={buyerEmail}
-                    required
-                  ></input>
-                  <label>Your Number:</label>
-                  <input
-                    type="text"
-                    name="buyerNumber"
-                    value={buyerNumber}
-                    required
-                  ></input>
-                  <p>
-                    <i>Next step the seller will accept/decline the offer</i>
+                <label>
+                  Location:{" "}
+                  <p className="modalSubTextLocation">
+                    (exact address to be sent on confirmation)
                   </p>
-                  <div className="termscondcont">
-                    <p>Agree to Terms and Conditions*</p>
-                    <input
-                      type="checkbox"
-                      name="termsConditions"
-                      value={termsConditions}
-                      required
-                    ></input>
-                  </div>
-                  <div className="modalBtnCont">
-                    <button>Confirm and Book</button>
-                  </div>
-                </form>
-              </Fragment>
-            {/* ) : ( */}
-              <Fragment>
-                {" "}
-                <h2 className="modalMessage">The Next Step..</h2>
-                <p className="modalMessage">Booking at: {bookingTime}</p>
-                {/* <p className="modalMessage">{errors || message}</p> */}
-              </Fragment>
-            {/* )} */}
-          </div>
+                </label>
+                <select type="text" name="location" value={location} required>
+                  <option value="" disabled selected hidden>
+                    Pick a Location
+                  </option>
+                  <option
+                    value={`${suburb}, ${postcode}`}
+                  >{`${suburb}, ${postcode}`}</option>
+                </select>
+                <label>Item:</label>
+                <input type="text" name="item" value={item} required></input>
+                <label>Price:</label>
+                <input type="text" name="price" value={price} required></input>
+                <label>Marketplace:</label>
+                <select
+                  type="text"
+                  name="marketplace"
+                  value={marketplace}
+                  required
+                >
+                  <option value="" disabled selected hidden>
+                    Select Marketplace
+                  </option>
+                  <option value="Facebook">Facebook</option>
+                  <option value="Gumtree">Gumtree</option>
+                </select>
+                <label>Payment Method:</label>
+                <select
+                  type="text"
+                  name="paymentMethod"
+                  value={paymentMethod}
+                  required
+                >
+                  <option value="" disabled selected hidden>
+                    Payment Method
+                  </option>
+                  <option value="Cash">Cash</option>
+                  <option value="PayPal">PayPal</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                </select>
+                <label>Your Name:</label>
+                <input
+                  type="text"
+                  name="buyerName"
+                  value={buyerName}
+                  required
+                ></input>
+                <label>Your Email:</label>
+                <input
+                  type="email"
+                  name="buyerEmail"
+                  value={buyerEmail}
+                  required
+                ></input>
+                <label>Your Number:</label>
+                <input
+                  type="text"
+                  name="buyerNumber"
+                  value={buyerNumber}
+                  required
+                ></input>
+                <p>
+                  <i>Next step the seller will accept/decline the offer</i>
+                </p>
+                <div className="termscondcont">
+                  <p>Agree to Terms and Conditions*</p>
+                  <input
+                    type="checkbox"
+                    name="termsConditions"
+                    value={termsConditions}
+                    required
+                  ></input>
+                </div>
+                <div className="modalBtnCont">
+                  <button>Confirm and Book</button>
+                </div>
+              </form>
+            </Fragment>
+          ) : (
+            <Fragment>
+              {" "}
+              <h2 className="modalMessage">The Next Step..</h2>
+              <p className="modalMessage">Booking at: {bookingTime}</p>
+              <p className="modalMessage">{message}</p>
+            </Fragment>
+          )}
         </div>
-      );
-    };
+      </div>
+    );
+  };
 
   //close modal
   const onModalClose = (e) => {
     setModal(initialStateModal);
+    setMessage(null);
   };
 
   //google autocomplete handlers auto-fill bug
   const onFocus = (event) => {
-    if (event.target.autocomplete) {
+    if (event.target.id === "autocomplete") {
+      setLocation({
+        ...location,
+        locationCheck: false,
+        exactLocation: "",
+        postcode: "",
+        state: "",
+        calculatedDistance: "",
+        calculatedDuration: "",
+      });
+      event.target.value = "";
       event.target.autocomplete = "";
     }
   };
   const onBlur = (event) => {
-    if (this.state.locationCheck === false) {
-      event.target.value = "";
+    if (location.locationCheck === false) {
+      let locationName = event.target.value.split(" ");
+      locationName = locationName[locationName.length - 1];
+      if (locationName !== "Australia") {
+        event.target.value = "";
+      }
     }
-  };
-  const handleChange = (event) => {
-    this.setState({
-      [event.target.name]: event.target.value,
-    });
   };
 
   const handleAddressSubmit = (event) => {
     event.preventDefault();
     if (event.target.id === "checkDistance") {
-      const locationData = {
-        sellerId: this.props.data.availabilities.userId,
-        buyerLocation: this.state.exactLocation,
-        transportMethod: this.state.transportMethod,
-      };
-      this.props.CalculateDistance(locationData);
+      calculateDistance({
+        variables: {
+          sellerId: props.match.params.userid,
+          buyerLocation: location.exactLocation,
+          transportMethod: location.transportMethod,
+        },
+      });
+      setLocation({
+        ...location,
+        locationCheck: false,
+      });
     }
   };
 
-  let availabilities = calendar.availabilities;
   let { state, suburb, postcode } = calendar;
 
   const { transportMethod, calculatedDistance, calculatedDuration } = location;
@@ -575,7 +705,6 @@ export default function Calendar(props) {
         <div className="distanceCalculator">
           <form
             onSubmit={handleAddressSubmit}
-            onChange={handleChange}
             autoComplete="off"
             id="checkDistance"
           >
@@ -589,14 +718,14 @@ export default function Calendar(props) {
               <h3>Distance and options to your address</h3>
               <Autocomplete
                 data-id="0"
-                name="autoLocation"
                 className="checkDistanceInput"
+                id="autocomplete"
                 required
                 onBlur={onBlur}
                 placeholder="Select Location"
                 onPlaceSelected={(place) => {
-                  setLocation((prevState) => ({
-                    ...prevState,
+                  setLocation({
+                    ...location,
                     exactLocation: place.formatted_address,
                     postcode:
                       place.address_components[
@@ -607,7 +736,7 @@ export default function Calendar(props) {
                         place.address_components.length - 3
                       ].short_name,
                     locationCheck: true,
-                  }));
+                  });
                 }}
                 types={["address"]}
                 componentRestrictions={{ country: "au" }}
@@ -621,6 +750,12 @@ export default function Calendar(props) {
                 name="transportMethod"
                 className="editTimeInputs"
                 value={transportMethod}
+                onChange={(e) => {
+                  setLocation({
+                    ...location,
+                    transportMethod: e.target.value,
+                  });
+                }}
                 required
               >
                 <option value="driving" selected>
@@ -635,7 +770,7 @@ export default function Calendar(props) {
                 Discover
               </button>
             </div>
-            {calculatedDistance !== null ? (
+            {calculatedDistance !== "" ? (
               <div>
                 <p className="distanceCalcText">
                   {" "}
@@ -650,13 +785,20 @@ export default function Calendar(props) {
         </div>
         <div className="pickupLocations">
           <h3>Pick up location(s) Options:</h3>
-          {/* TODO: hide api key */}
-          {/* TODO: change to a loading or not loading so they don't see the empty map */}
-          <img
-            src={`https://maps.googleapis.com/maps/api/staticmap?center=${suburb}+${state}+AU&zoom=14&size=300x300&markers=color:red||${suburb}+${state}+AU&key=AIzaSyAMx8UE3xmQW9t1o1pN6tsaBsaXM3y8LpM`}
-            className="mapImg"
-            alt="calendar images"
-          ></img>
+      
+           {map.map ? (
+            <img
+          
+              src={map.data.request.responseURL}
+              className="mapImg"
+              alt="calendar images"
+            ></img>
+          ) : (
+            <div className="spinnerCal">
+              <MoonLoader className="spinnerCalendar" size={110} loading />
+            </div>
+          )}
+
           <p>
             {suburb} {postcode}
           </p>

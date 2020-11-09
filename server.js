@@ -4,7 +4,6 @@ const { sequelize } = require("./models");
 //ROUTES
 require("dotenv").config();
 
-//TODO: string encryption for password
 const typeDefs = require("./graphql/typeDefs");
 
 //HANDLERS OF THESE ROUTES

@@ -4,21 +4,42 @@ import { Link } from "react-router-dom";
 import { ScaleLoader } from "react-spinners";
 import { gql, useMutation } from "@apollo/client";
 
+import emailjs from "emailjs-com";
+
 //graphql
-const REGISTER_USER = gql`
-  mutation register(
-    $username: String!
+// const REGISTER_USER = gql`
+//   mutation register(
+//     $username: String!
+//     $email: String!
+//     $password: String!
+//     $confirmPassword: String!
+//   ) {
+//     register(
+//       username: $username
+//       email: $email
+//       password: $password
+//       confirmPassword: $confirmPassword
+//     ) {
+//       userId username email createdAt
+//     }
+//   }
+// `;
+const CONTACT_DATA = gql`
+  mutation storeTempData(
     $email: String!
-    $password: String!
-    $confirmPassword: String!
+    $name: String
+    $enquiry: String
+    $handle: String
+    $contactMethod: String!
   ) {
-    register(
-      username: $username
+    storeTempData(
       email: $email
-      password: $password
-      confirmPassword: $confirmPassword
+      name: $name
+      enquiry: $enquiry
+      handle: $handle
+      contactMethod: $contactMethod
     ) {
-      userId username email createdAt
+      message
     }
   }
 `;
@@ -29,19 +50,41 @@ export default function Signup(props) {
     username: "",
     password: "",
     confirmPassword: "",
+    status: "",
   });
 
   const [errors, setErrors] = useState({});
 
-  const [registerUser, { loading }] = useMutation(REGISTER_USER, {
-    update: (_, __) => props.history.push("/login"),
-    onError: (err) => setErrors(err.graphQLErrors[0].extensions.errors),
+  // const [registerUser, { loading }] = useMutation(REGISTER_USER, {
+  //   update: (_, __) => props.history.push("/login"),
+  //   onError: (err) => setErrors(err.graphQLErrors[0].extensions.errors),
+  // });
+
+  // //When we go back to normal bring this back
+  // const handleSubmit = (event) => {
+  //   event.preventDefault();
+  //   //you have to name and pass variables because it's what the thing accepts
+  //   registerUser({variables});
+  // };
+
+  const [signupData, { data, errorsData }] = useMutation(CONTACT_DATA, {
+    onError: (err) => console.log(err),
+    onCompleted: (data) => {
+      console.log(data);
+    },
   });
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    //you have to name and pass variables because it's what the thing accepts
-    registerUser({variables});
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = {
+      name: variables.username,
+      email: variables.email,
+
+      contactMethod: "Signup Form",
+    };
+
+    signupData({ variables: formData });
+    props.history.push("/beta");
   };
 
   return (
@@ -50,7 +93,9 @@ export default function Signup(props) {
       <form onSubmit={handleSubmit}>
         <div className="signupSection">
           {/* email */}
-          <p className={errors.email ? "loginSignupLabel" : null}>{errors.email ?? "Email Address"}</p>
+          <p className={errors.email ? "loginSignupLabel" : null}>
+            {errors.email ?? "Email Address"}
+          </p>
           <input
             placeholder="Email"
             className="emailSignup"
@@ -68,9 +113,8 @@ export default function Signup(props) {
         {/* password */}
         <div className="passwordSection">
           <p className={errors.password ? "loginSignupLabel" : null}>
-            
             {errors.password ?? "Password (6 characters in length)"}
-            </p>
+          </p>
           <input
             placeholder="Password"
             className="passwordSignup"
@@ -87,9 +131,8 @@ export default function Signup(props) {
         {/* confrim password */}
         <div className="passwordSection">
           <p className={errors.confirmPassword ? "loginSignupLabel" : null}>
-            
             {errors.confirmPassword ?? "Confirm Password"}
-            </p>
+          </p>
           <input
             placeholder="Confirm Password"
             className="passwordSignup"
@@ -107,7 +150,7 @@ export default function Signup(props) {
         <div className="passwordSection">
           <p className={errors.username ? "loginSignupLabel" : null}>
             {errors.username ?? "Username"}
-            </p>
+          </p>
           <input
             placeholder="Username"
             className="handle"
@@ -150,4 +193,3 @@ export default function Signup(props) {
     </div>
   );
 }
-

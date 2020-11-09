@@ -44,14 +44,7 @@ const SET_AVAILABILITIES = gql`
   }
 `;
 
-//TODO: handle no availibilites
-//TODO: when unmount change editing to false
-//TODO: bind functions where needed
-//TODO: when suubmitting new dates they aren't coming up in the dom
-//TODO: not updating new months outside of the day
-//TODO: on unmount say make sure you want to save changes
-//TODO: when going from home it's stuck on loading
-//TODO: add on signup calendar
+//TODO: delete doesn't work on it doesn't update the database
 
 export default function MyCalendar(props) {
   const AuthDispatch = useAuthDispatch();
@@ -431,9 +424,9 @@ export default function MyCalendar(props) {
             {/* <a href={`http://localhost:3000/calendar/${user.userId}`}>
                    http://localhost:3000/calendar/{user.userId}
                   </a>{" "} */}
-            {/* <a href={`https://app.gdrop.co/calendar/${userId}`}>
-              https://app.gdrop.co/calendar/{userId}
-            </a>{" "} */}
+            <a href={`https://app.gdrop.co/calendar/${user.userId}`}>
+              https://app.gdrop.co/calendar/{user.userId}
+            </a>{" "}
           </p>
 
           <p>

@@ -2,10 +2,8 @@ import React from "react";
 import { Route, Redirect } from "react-router-dom";
 import { useAuthState } from "../context/auth";
 
-//TODO: add settings route
 
 export default function DynamicRoute(props) {
-  console.log(props.computedMatch.params)
   
   const { user } = useAuthState()
   if (props.authenticated && !user) {

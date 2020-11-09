@@ -13,7 +13,6 @@ module.exports = gql`
     state: String
     suburb: String
     postcode: String
-    # TODO: take out
     token: String
   }
 
@@ -37,7 +36,6 @@ module.exports = gql`
     uuid: String!
   }
 
-
   type AvailabilityMessage {
     message: String!
   }
@@ -57,7 +55,7 @@ module.exports = gql`
     location: String!
   }
 
-  type BookingMessage {
+  type Message {
     message: String!
   }
 
@@ -73,7 +71,6 @@ module.exports = gql`
     getUsers: [User]!
     login(username: String!, password: String!): User! #COMPLETED
     getMyCalendar(userId: String!): UserCalendar! #COMPLETED
-
     #buyer
     getCalendar(userId: String!): UserCalendar! #COMPLETED
     # queryAvailability(userId: String!, date: String!): [Booking]! //TODO: needed?
@@ -95,16 +92,12 @@ module.exports = gql`
     # COMPLETED
     #seller
     setAvail(input: [availabilities]!): AvailabilityMessage! #COMPLETED
-
     setLocation(
       exactLocation: String!
       postcode: String!
       state: String!
       suburb: String!
     ): location! # COMPLETED
-
-   
-
     confirmBooking(
       buyerId: String!
       userId: String!
@@ -114,12 +107,33 @@ module.exports = gql`
       bookingConfirmed: Boolean!
     ): String!
 
-    #buyer
+    storeTempData(
+      email: String!
+      name: String
+      enquiry: String
+      handle: String
+      contactMethod: String!
+    ): Message!
+
     makeBooking(
-      userId: String!
-      date: String!
-      start: String!
-      end: String!
-    ): BookingMessage!
+      bookingTime: String!
+      buyerEmail: String!
+      buyerName: String!
+      buyerNumber: String!
+      item: String!
+      location: String!
+      marketplace: String!
+      paymentMethod: String!
+      price: String!
+      selectedDate: String!
+    ): Message!
+
+    #buyer
+    # makeBooking(
+    #   userId: String!
+    #   date: String!
+    #   start: String!
+    #   end: String!
+    # ): Message!
   }
 `;

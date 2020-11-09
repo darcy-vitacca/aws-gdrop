@@ -1,7 +1,7 @@
 //Core
 import React, { Fragment, useState } from "react";
 import { useAuthDispatch, useAuthState } from "../context/auth";
-import { gql, useLazyQuery, useMutation } from "@apollo/client";
+import { gql, useMutation } from "@apollo/client";
 
 import deletedash from "../images/editdash.png";
 import editdash from "../images/editdash.png";
@@ -9,9 +9,9 @@ import editdash from "../images/editdash.png";
 //Packages
 import Autocomplete from "react-google-autocomplete";
 import ReactTooltip from "react-tooltip";
-import { ScaleLoader } from "react-spinners";
+// import { ScaleLoader } from "react-spinners";
 // import { uuid } from "uuidv4";
-//TODO: need to add change username and change password 
+//TODO: need to add change username and change password
 
 const SET_LOCATION = gql`
   mutation setLocation(
@@ -90,7 +90,7 @@ export default function Settings(props) {
     event.preventDefault();
     console.log(event.target.id);
     if (event.target.id === "updateLocation") {
-      console.log(location)
+      console.log(location);
       updateLocation({
         variables: location,
       });
@@ -109,14 +109,18 @@ export default function Settings(props) {
     }
   };
 
-  const { exactLocation, postcode, state, suburb, changingLocation } = location;
+  const { 
+    // exactLocation, postcode, state, suburb, 
+    changingLocation } = location;
   const {
     oldPassword,
     newPassword,
     confirmPassword,
     changingPassword,
   } = password;
-  const { newEmail, emailPassword, changingEmail } = email;
+  const { 
+    // emailPassword,
+    newEmail,  changingEmail } = email;
 
   let settingsMarkup;
   if (changingLocation) {
@@ -239,7 +243,7 @@ export default function Settings(props) {
   return (
     <div className="settingsContainer">
       {/* {!loading ? (
-      */}
+       */}
       <div className="accountContainer">
         <h1 className="accountHeader">Settings</h1>
         <div className="settingsCard">

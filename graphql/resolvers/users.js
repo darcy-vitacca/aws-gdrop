@@ -1,5 +1,10 @@
 const bcrypt = require("bcryptjs");
-const { User, Availabilities, Bookings } = require("../../models");
+const {
+  User,
+  Availabilities,
+  Bookings,
+  TempUserData,
+} = require("../../models");
 const { UserInputError, AuthenticationError } = require("apollo-server");
 const jwt = require("jsonwebtoken");
 const { Op } = require("sequelize");
@@ -66,11 +71,15 @@ module.exports = {
           throw new UserInputError("Password is incorrect", { errors });
         }
         //could change this to a larger time This is where you user info is stored
-        const token = jwt.sign({ username ,userId : user.userId }, process.env.JWT_SECRET, {
-          expiresIn: 60 * 60,
-        });
-   
-console.log(user.userId)
+        const token = jwt.sign(
+          { username, userId: user.userId },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: 60 * 60,
+          }
+        );
+
+        console.log(user.userId);
         return {
           ...user.toJSON(),
           userId: user.userId,
@@ -84,6 +93,34 @@ console.log(user.userId)
   },
 
   Mutation: {
+    storeTempData: async (_, args) => {
+      const { email, name, enquiry, handle, contactMethod } = args;
+      let errors = {};
+      try {
+        if (email.trim() === "") errors.email = "Username must not be empty";
+        if (contactMethod === "")
+          errors.contactMethod = "Password must not be empty";
+
+        if (Object.keys(errors).length > 0) {
+          throw new UserInputError("Bad Input", { errors });
+        }
+
+        const tempUserData = await TempUserData.create({
+          email,
+          name,
+          enquiry,
+          handle,
+          contactMethod,
+        });
+        const message = {
+          message: "success",
+        };
+        return message;
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    },
     register: async (_, args) => {
       let { username, email, password, confirmPassword } = args;
       let errors = {};
