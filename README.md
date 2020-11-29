@@ -4,11 +4,15 @@ G’Drop is a way to revolutionize marketplace buying and selling across all pla
 #### Profile Page for Seller:
 https://app.gdrop.co/calendar/QrP0FpAYHcfYJk06fZkaq8Xy7yz1
 
-#### Calendar with availabilities to book in:
+<img width="1036" alt="gdrop" src="https://user-images.githubusercontent.com/60879777/100556271-47eca700-32f5-11eb-9b52-b4989e6ce09d.png">
+
+
 <img width="1036" alt="gdrop" src="https://user-images.githubusercontent.com/60879777/100556042-7a95a000-32f3-11eb-9998-c4a9fce9ceef.png">
+
+#### Calendar with availabilities to book in:
+<img width="1036" alt="Screen Shot 2020-11-30 at 9 57 17 am" src="https://user-images.githubusercontent.com/60879777/100556069-a0bb4000-32f3-11eb-932a-f5fcf69c207b.png">
 
 #### Booking modal to pickup item:
 <img width="1036" alt="Screen Shot 2020-11-30 at 9 57 17 am" src="https://user-images.githubusercontent.com/60879777/100556069-a0bb4000-32f3-11eb-932a-f5fcf69c207b.png">
-
 
 
